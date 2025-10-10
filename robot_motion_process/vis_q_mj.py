@@ -17,6 +17,7 @@ from copy import deepcopy
 from collections import defaultdict
 import mujoco
 import mujoco.viewer
+import glfw
 from scipy.spatial.transform import Rotation as sRot
 import joblib
 import hydra
@@ -206,6 +207,155 @@ def main(cfg : DictConfig) -> None:
                 time.sleep(time_until_next_step)
                 
             print("Frame ID: ",curr_time,'\t | Times ',f"{time_step:4f}",end='\r\b')
+
+            # ----------------- mouse joint interaction (simple) -----------------
+            # Register callbacks once (attach to viewer.window). We set them here so
+            # they run in the same context as the viewer. Left-click to select the
+            # nearest joint marker; while holding left button, horizontal mouse
+            # movement will change the corresponding joint DOF (qpos index offset by 7).
+            try:
+                if not hasattr(viewer, '_mouse_callbacks_registered'):
+                    selected = {'dof': None}
+                    last_cursor = {'x': 0.0, 'y': 0.0}
+                    sensitivity = 0.01  # angle per pixel
+                    pick_threshold = 0.35  # meters (fallback spatial threshold)
+                    original_colors = {}
+                    joint_limits_min = np.full(23, -np.pi)
+                    joint_limits_max = np.full(23, np.pi)
+
+                    def _get_camera_frame():
+                        cam = viewer.cam
+                        lookat = np.array(cam.lookat)
+                        az = np.deg2rad(cam.azimuth)
+                        el = np.deg2rad(cam.elevation)
+                        dist_cam = cam.distance
+                        cam_pos = lookat + dist_cam * np.array([
+                            np.cos(el) * np.sin(az),
+                            -np.cos(el) * np.cos(az),
+                            np.sin(el)
+                        ])
+                        forward = lookat - cam_pos
+                        forward /= (np.linalg.norm(forward) + 1e-9)
+                        world_up = np.array([0., 0., 1.])
+                        right = np.cross(forward, world_up)
+                        if np.linalg.norm(right) < 1e-6:
+                            right = np.array([1., 0., 0.])
+                        else:
+                            right /= np.linalg.norm(right)
+                        up = np.cross(right, forward)
+                        up /= (np.linalg.norm(up) + 1e-9)
+                        return cam_pos, lookat, forward, right, up
+
+                    def _project_to_screen(pos):
+                        try:
+                            vp = viewer.viewport
+                            w, h = vp.width, vp.height
+                            cam_pos, lookat, forward, right, up = _get_camera_frame()
+                            vec = pos - cam_pos
+                            zc = np.dot(vec, forward)
+                            if zc <= 1e-6:
+                                return None
+                            xc = np.dot(vec, right)
+                            yc = np.dot(vec, up)
+                            fov = np.deg2rad(60.0)
+                            aspect = w / (h + 1e-9)
+                            sx = 0.5 + (xc / zc) / (np.tan(fov/2) * aspect) * 0.5
+                            sy = 0.5 - (yc / zc) / (np.tan(fov/2)) * 0.5
+                            return np.array([sx * w, sy * h])
+                        except Exception:
+                            return None
+
+                    def _pick_nearest_joint(x, y):
+                        # Try precise screen-space projection first, fallback to spatial score
+                        best_idx = None
+                        best_dist = float('inf')
+                        for i in range(23):
+                            pos = joint_gt[curr_time, i+1]
+                            screen = _project_to_screen(pos)
+                            if screen is not None:
+                                d2 = np.linalg.norm(screen - np.array([x, y]))
+                                if d2 < best_dist:
+                                    best_dist = d2
+                                    best_idx = i
+
+                        if best_idx is not None and best_dist < 60.0:  # pixels threshold
+                            return best_idx
+
+                        # fallback to previous approximate spatial metric
+                        best_idx = None
+                        best_score = float('inf')
+                        cam_pos, lookat, forward, right, up = _get_camera_frame()
+                        for i in range(23):
+                            pos = joint_gt[curr_time, i+1]
+                            vec = pos - cam_pos
+                            d = np.linalg.norm(vec)
+                            cosang = np.dot(vec, forward) / (np.linalg.norm(vec) * np.linalg.norm(forward) + 1e-9)
+                            cosang = np.clip(cosang, -1.0, 1.0)
+                            ang = np.arccos(cosang)
+                            score = ang * d
+                            if score < best_score:
+                                best_score = score
+                                best_idx = i
+
+                        if best_idx is not None:
+                            pos_best = joint_gt[curr_time, best_idx+1]
+                            if np.linalg.norm(pos_best - (lookat)) > 3.0 and best_score > pick_threshold:
+                                return None
+                        return best_idx
+
+                    def _highlight_geom(idx, highlight=True):
+                        geom_idx = idx + 1
+                        try:
+                            if highlight:
+                                # save original
+                                if geom_idx not in original_colors:
+                                    original_colors[geom_idx] = viewer.user_scn.geoms[geom_idx].rgba.copy()
+                                viewer.user_scn.geoms[geom_idx].rgba = np.array([1.0, 1.0, 0.0, 1.0])
+                            else:
+                                if geom_idx in original_colors:
+                                    viewer.user_scn.geoms[geom_idx].rgba = original_colors[geom_idx]
+                                    del original_colors[geom_idx]
+                        except Exception:
+                            ...
+
+                    def mouse_button_callback(window, button, action, mods):
+                        if button == glfw.MOUSE_BUTTON_LEFT:
+                            x, y = glfw.get_cursor_pos(window)
+                            if action == glfw.PRESS:
+                                last_cursor['x'], last_cursor['y'] = x, y
+                                sel = _pick_nearest_joint(x, y)
+                                selected['dof'] = sel
+                                if sel is not None:
+                                    print(f"Selected joint dof: {sel}")
+                                    _highlight_geom(sel, True)
+                            elif action == glfw.RELEASE:
+                                if selected['dof'] is not None:
+                                    _highlight_geom(selected['dof'], False)
+                                selected['dof'] = None
+
+                    def cursor_pos_callback(window, xpos, ypos):
+                        if selected['dof'] is None:
+                            return
+                        dx = xpos - last_cursor['x']
+                        # update last cursor immediately so movement is incremental
+                        last_cursor['x'], last_cursor['y'] = xpos, ypos
+                        dof_idx = selected['dof']
+                        if dof_idx is None:
+                            return
+                        qpos_idx = 7 + dof_idx
+                        # apply horizontal motion to joint angle with clamping
+                        val = mj_data.qpos[qpos_idx] + dx * sensitivity
+                        val = float(np.clip(val, joint_limits_min[dof_idx], joint_limits_max[dof_idx]))
+                        mj_data.qpos[qpos_idx] = val
+                        # forward kinematics so the model updates immediately
+                        mujoco.mj_forward(mj_model, mj_data)
+
+                    glfw.set_mouse_button_callback(viewer.window, mouse_button_callback)
+                    glfw.set_cursor_pos_callback(viewer.window, cursor_pos_callback)
+                    viewer._mouse_callbacks_registered = True
+            except Exception:
+                # safe fallback: if viewer/window or glfw not available, ignore
+                ...
 
     if resave:
         motion_data[curr_motion_key]['contact_mask'] = contact_mask
