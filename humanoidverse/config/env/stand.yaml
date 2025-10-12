@@ -1,0 +1,13 @@
+xml_path: description/robots/g1/g1_29dof_rev_1_0.xml
+sim_dt: 0.0041667      # = 1/240
+control_dt: 0.0333     # = 1/30
+target_height: 0.85
+tilt_limit_deg: 60
+action_scale: 0.3
+reward_weights:
+  upright: 3.0
+  height: 2.0
+  vel: 0.1
+  action: 0.05
+max_seconds: 10
+seed: 42

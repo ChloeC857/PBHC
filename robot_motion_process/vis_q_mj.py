@@ -25,6 +25,20 @@ from omegaconf import DictConfig, OmegaConf
 
 from humanoidverse.utils.motion_lib.torch_humanoid_batch import Humanoid_Batch
 
+# TODO A: stand config
+def _make_stand_motion(T=300, height=0.85):
+    """Make a simple standing motion"""
+    root_trans = np.tile(np.array([[0., 0., height]], dtype=np.float32), (T,1))
+    root_rot   = np.tile(np.array([[0., 0., 0., 1.]], dtype=np.float32), (T,1))  # xyzw
+    dof        = np.zeros((T, 23), dtype=np.float32)  # 23 dofs for g1_23dof
+    motion = {
+        'fps': 30,
+        'root_trans_offset': root_trans,
+        'root_rot': root_rot,
+        'dof': dof
+    }
+    return motion
+
 
 def add_visual_capsule(scene, point1, point2, radius, rgba):
     """Adds one capsule to an mjvScene."""
@@ -79,36 +93,54 @@ def key_call_back( keycode):
         
 @hydra.main(version_base=None)
 def main(cfg : DictConfig) -> None:
+    # TODO A: stand config
+    stand_still = bool(getattr(cfg, "stand_still", False))
+    frames = int(getattr(cfg, "frames", 300))
+    height = float(getattr(cfg, "height", 0.85))
+    
     global curr_start, num_motions, motion_id, motion_acc, time_step, dt, speed, paused, rewind, motion_data_keys, contact_mask, curr_time, resave
     curr_start, num_motions, motion_id, motion_acc, time_step, dt, speed, paused, rewind \
         = 0, 1, 0, set(), 0, 1/30, 1.0, False, False
     # if 'dt' in cfg:
     #     dt = cfg.dt
-    motion_file = cfg.motion_file
-    motion_data = joblib.load(motion_file)
-    motion_data_keys = list(motion_data.keys())
-    curr_motion_key = motion_data_keys[motion_id]
-    curr_motion = motion_data[curr_motion_key]
-    print(motion_file)
-    
-    speed = 1.0 if 'speed' not in cfg else cfg.speed
-    hang = False if 'hang' not in cfg else cfg.hang
-    if 'fps' in curr_motion:
+    # TODO A: add stand still motion
+    if stand_still:
+        #  make a stand still motion
+        motion_data = {"stand": _make_stand_motion(T=frames, height=height)}
+        motion_data_keys = list(motion_data.keys())
+        curr_motion_key = motion_data_keys[0]
+        curr_motion = motion_data[curr_motion_key]
         dt = 1.0 / curr_motion['fps']
-    elif 'dt' in cfg:
-        dt = cfg.dt
-        
-    print("Motion file: ", motion_file)
-    print("Motion length: ", motion_data[motion_data_keys[0]]['dof'].shape[0], 'frames')
-    print("Speed: ", speed)
-    print()
-
-    if 'contact_mask' in curr_motion.keys():
-        contact_mask = curr_motion['contact_mask']
-    else:
         contact_mask = None
-    curr_time = 0
-    resave = False
+        curr_time = 0
+        resave = False
+        print("[INFO] Stand-still visualization (no motion file).")
+    else: 
+        motion_file = cfg.motion_file
+        motion_data = joblib.load(motion_file)
+        motion_data_keys = list(motion_data.keys())
+        curr_motion_key = motion_data_keys[motion_id]
+        curr_motion = motion_data[curr_motion_key]
+        print(motion_file)
+        
+        speed = 1.0 if 'speed' not in cfg else cfg.speed
+        hang = False if 'hang' not in cfg else cfg.hang
+        if 'fps' in curr_motion:
+            dt = 1.0 / curr_motion['fps']
+        elif 'dt' in cfg:
+            dt = cfg.dt
+        
+        print("Motion file: ", motion_file)
+        print("Motion length: ", motion_data[motion_data_keys[0]]['dof'].shape[0], 'frames')
+        print("Speed: ", speed)
+        print()
+
+        if 'contact_mask' in curr_motion.keys():
+            contact_mask = curr_motion['contact_mask']
+        else:
+            contact_mask = None
+        curr_time = 0
+        resave = False
 
 
     humanoid_xml = "./description/robots/g1/g1_23dof_lock_wrist.xml"
