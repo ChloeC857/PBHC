@@ -54,7 +54,7 @@ def add_visual_capsule(scene, point1, point2, radius, rgba):
                             point1[0], point1[1], point1[2],
                             point2[0], point2[1], point2[2])
 
-def key_call_back( keycode):
+def key_call_back(keycode):
     global curr_start, num_motions, motion_id, motion_acc, time_step, dt, speed, paused, rewind, motion_data_keys, contact_mask, curr_time, resave
     if chr(keycode) == "R":
         print("Reset")
@@ -211,227 +211,313 @@ def main(cfg : DictConfig) -> None:
     mj_model = mujoco.MjModel.from_xml_path(humanoid_xml)
     mj_data = mujoco.MjData(mj_model)
     mj_model.opt.timestep = dt
-    
+
+    for j in range(mj_model.njnt):
+        jtype = mj_model.jnt_type[j]
+        # 跳过根节点
+        if jtype == mujoco.mjtJoint.mjJNT_FREE:
+            continue
+
+        # 每个关节在 qpos 中的起始索引
+        qadr = mj_model.jnt_qposadr[j]
+
+        # 根据关节类型推定自由度数
+        if jtype == mujoco.mjtJoint.mjJNT_HINGE or jtype == mujoco.mjtJoint.mjJNT_SLIDE:
+            dofnum = 1
+        elif jtype == mujoco.mjtJoint.mjJNT_BALL:
+            dofnum = 4  # 四元数形式
+        else:
+            dofnum = 0
+
+        # 将该关节的 qpos 锁定为初始值
+        for k in range(dofnum):
+            idx = qadr + k
+            if idx < mj_model.nq:
+                mj_model.jnt_range[j, 0] = mj_data.qpos[idx]
+                mj_model.jnt_range[j, 1] = mj_data.qpos[idx]
+
+    # 停止所有速度与控制输入
+    mj_data.qvel[:] = 0
+    mj_data.ctrl[:] = 0
+    print("[INFO] All joints locked except root.")
+
+
     print("Init Pose: ",(np.array(np.concatenate(
         [curr_motion['root_trans_offset'][0],curr_motion['root_rot'][0][[3, 0, 1, 2]], curr_motion['dof'][0]]
         ),dtype=np.float32)).__repr__())
     
     # breakpoint()
-    with mujoco.viewer.launch_passive(mj_model, mj_data, key_callback=key_call_back) as viewer:
-        
-        viewer.cam.lookat[:] = np.array([0,0,0.7])
-        viewer.cam.distance = 3.0        
-        viewer.cam.azimuth = 180         
-        viewer.cam.elevation = -30                      # 负值表示从上往下看viewer
-        
-        for _ in range(50):
-                # not display the ball
-            # add_visual_capsule(viewer.user_scn, np.zeros(3), np.array([0.001, 0, 0]), 0.05, np.array([1, 0, 0, 0]))
-            add_visual_capsule(viewer.user_scn, np.zeros(3), np.array([0.001, 0, 0]), 0.05, np.array([1, 0, 0, 1]))
-        
-        # breakpoint()
+    with mujoco.viewer.launch(mj_model, mj_data) as viewer:
+        viewer.cam.lookat[:] = np.array([0, 0, 0.7])
+        viewer.cam.distance = 3.0
+        viewer.cam.azimuth = 180
+        viewer.cam.elevation = -30
+
+        # 初始化
+        mujoco.mj_forward(mj_model, mj_data)
+        selected = {'dof': None}
+        last_cursor = {'x': 0.0, 'y': 0.0}
+        sensitivity = 0.02  # 鼠标灵敏度
+        torque_gain = 20.0  # 力矩放大系数
+        joint_limits_min = np.full(mj_model.nu, -np.pi)
+        joint_limits_max = np.full(mj_model.nu, np.pi)
+
+        def mouse_button_callback(window, button, action, mods):
+            if button == glfw.MOUSE_BUTTON_LEFT:
+                x, y = glfw.get_cursor_pos(window)
+                if action == glfw.PRESS:
+                    last_cursor['x'], last_cursor['y'] = x, y
+                    # 默认选中第一个关节（你也可以扩展为_pick_nearest_joint）
+                    selected['dof'] = 0
+                    print("Selected DOF: ", selected['dof'])
+                elif action == glfw.RELEASE:
+                    selected['dof'] = None
+                    mj_data.ctrl[:] = 0  # 松开鼠标时停止控制
+
+        def cursor_pos_callback(window, xpos, ypos):
+            if selected['dof'] is None:
+                return
+            dx = xpos - last_cursor['x']
+            last_cursor['x'] = xpos
+            dof_idx = selected['dof']
+            torque = dx * torque_gain
+            mj_data.ctrl[dof_idx] = np.clip(torque, -100, 100)  # 设置控制输入
+            print(f"Joint {dof_idx} torque = {mj_data.ctrl[dof_idx]:.3f}")
+
+        window = viewer.window
+        glfw.set_key_callback(window, key_call_back)
+        glfw.set_mouse_button_callback(window, mouse_button_callback)
+        glfw.set_cursor_pos_callback(window, cursor_pos_callback)
+        # ================== 主循环 ==================
         while viewer.is_running():
             step_start = time.time()
-            if time_step >= curr_motion['dof'].shape[0]*dt:
-                time_step -= curr_motion['dof'].shape[0]*dt
-            curr_time = round(time_step/dt) % curr_motion['dof'].shape[0]
+
+            # 执行物理仿真步
+            mujoco.mj_step(mj_model, mj_data)
+
+            # 让视图同步状态
+            viewer.sync()
+
+            # 控制仿真步速
+            time_until_next_step = mj_model.opt.timestep - (time.time() - step_start)
+            if time_until_next_step > 0:
+                time.sleep(time_until_next_step)
+
+    # with mujoco.viewer.launch_passive(mj_model, mj_data, key_callback=key_call_back) as viewer:
+        
+    #     viewer.cam.lookat[:] = np.array([0,0,0.7])
+    #     viewer.cam.distance = 3.0        
+    #     viewer.cam.azimuth = 180         
+    #     viewer.cam.elevation = -30                      # 负值表示从上往下看viewer
+        
+    #     for _ in range(50):
+    #             # not display the ball
+    #         # add_visual_capsule(viewer.user_scn, np.zeros(3), np.array([0.001, 0, 0]), 0.05, np.array([1, 0, 0, 0]))
+    #         add_visual_capsule(viewer.user_scn, np.zeros(3), np.array([0.001, 0, 0]), 0.05, np.array([1, 0, 0, 1]))
+        
+    #     # breakpoint()
+    #     while viewer.is_running():
+    #         step_start = time.time()
+    #         if time_step >= curr_motion['dof'].shape[0]*dt:
+    #             time_step -= curr_motion['dof'].shape[0]*dt
+    #         curr_time = round(time_step/dt) % curr_motion['dof'].shape[0]
             
-            if hang:
-                mj_data.qpos[:3] = np.array([0,0,0.8])
-            else:
-                mj_data.qpos[:3] = curr_motion['root_trans_offset'][curr_time]
-            mj_data.qpos[3:7] = curr_motion['root_rot'][curr_time][[3, 0, 1, 2]] #xyzw 2 wxyz
-            mj_data.qpos[7:] = curr_motion['dof'][curr_time]
+    #         if hang:
+    #             mj_data.qpos[:3] = np.array([0,0,0.8])
+    #         else:
+    #             mj_data.qpos[:3] = curr_motion['root_trans_offset'][curr_time]
+    #         mj_data.qpos[3:7] = curr_motion['root_rot'][curr_time][[3, 0, 1, 2]] #xyzw 2 wxyz
+    #         mj_data.qpos[7:] = curr_motion['dof'][curr_time]
             
             
-            mujoco.mj_forward(mj_model, mj_data)
-            if not paused:
-                time_step += dt * (1 if not rewind else -1) * speed
+    #         mujoco.mj_forward(mj_model, mj_data)
+    #         if not paused:
+    #             time_step += dt * (1 if not rewind else -1) * speed
             
                 
-            if vis_smpl:
-                joint_gt = motion_data[curr_motion_key]['smpl_joints']
-                if not np.all(joint_gt[curr_time] == 0):
-                    for i in range(joint_gt.shape[1]):
-                        viewer.user_scn.geoms[i].pos = joint_gt[curr_time, i]
-            else:
-                for i in range(23):
-                    viewer.user_scn.geoms[i+1].pos = joint_gt[curr_time, i+1]
+    #         if vis_smpl:
+    #             joint_gt = motion_data[curr_motion_key]['smpl_joints']
+    #             if not np.all(joint_gt[curr_time] == 0):
+    #                 for i in range(joint_gt.shape[1]):
+    #                     viewer.user_scn.geoms[i].pos = joint_gt[curr_time, i]
+    #         else:
+    #             for i in range(23):
+    #                 viewer.user_scn.geoms[i+1].pos = joint_gt[curr_time, i+1]
             
-            if vis_contact: 
-                viewer.user_scn.geoms[6].rgba = np.array([0, 1-curr_motion['contact_mask'][curr_time, 0], 0, 1])
-                viewer.user_scn.geoms[12].rgba = np.array([0, 1-curr_motion['contact_mask'][curr_time, 1], 0, 1])
+    #         if vis_contact: 
+    #             viewer.user_scn.geoms[6].rgba = np.array([0, 1-curr_motion['contact_mask'][curr_time, 0], 0, 1])
+    #             viewer.user_scn.geoms[12].rgba = np.array([0, 1-curr_motion['contact_mask'][curr_time, 1], 0, 1])
                 
-            if vis_tau:
-                scale_factor = 0.1
-                for i in range(23):
-                    tau = curr_motion[vis_tau_key][curr_time, i]
-                    color_gradient = abs(tau) * scale_factor
-                    if tau > 0:
-                        viewer.user_scn.geoms[i+1].rgba = np.array([0.8,0.1,0.1,0.1+color_gradient])
-                        # viewer.user_scn.geoms[i+1].rgba = np.array([0.1+color_gradient,0.,0.,1.])
-                    elif tau < 0:
-                        viewer.user_scn.geoms[i+1].rgba = np.array([0.1,0.8,0.1,0.1+color_gradient])
-                        # viewer.user_scn.geoms[i+1].rgba = np.array([0,0.1+color_gradient,0.,1.])
+    #         if vis_tau:
+    #             scale_factor = 0.1
+    #             for i in range(23):
+    #                 tau = curr_motion[vis_tau_key][curr_time, i]
+    #                 color_gradient = abs(tau) * scale_factor
+    #                 if tau > 0:
+    #                     viewer.user_scn.geoms[i+1].rgba = np.array([0.8,0.1,0.1,0.1+color_gradient])
+    #                     # viewer.user_scn.geoms[i+1].rgba = np.array([0.1+color_gradient,0.,0.,1.])
+    #                 elif tau < 0:
+    #                     viewer.user_scn.geoms[i+1].rgba = np.array([0.1,0.8,0.1,0.1+color_gradient])
+    #                     # viewer.user_scn.geoms[i+1].rgba = np.array([0,0.1+color_gradient,0.,1.])
                         
             
                 
 
-            viewer.sync()
-            time_until_next_step = mj_model.opt.timestep - (time.time() - step_start)
-            if time_until_next_step > 0:
-                time.sleep(time_until_next_step)
+    #         viewer.sync()
+    #         time_until_next_step = mj_model.opt.timestep - (time.time() - step_start)
+    #         if time_until_next_step > 0:
+    #             time.sleep(time_until_next_step)
                 
-            print("Frame ID: ",curr_time,'\t | Times ',f"{time_step:4f}",end='\r\b')
+    #         print("Frame ID: ",curr_time,'\t | Times ',f"{time_step:4f}",end='\r\b')
 
-            # ----------------- mouse joint interaction (simple) -----------------
-            # Register callbacks once (attach to viewer.window). We set them here so
-            # they run in the same context as the viewer. Left-click to select the
-            # nearest joint marker; while holding left button, horizontal mouse
-            # movement will change the corresponding joint DOF (qpos index offset by 7).
-            try:
-                if not hasattr(viewer, '_mouse_callbacks_registered'):
-                    selected = {'dof': None}
-                    last_cursor = {'x': 0.0, 'y': 0.0}
-                    sensitivity = 0.01  # angle per pixel
-                    pick_threshold = 0.35  # meters (fallback spatial threshold)
-                    original_colors = {}
-                    joint_limits_min = np.full(23, -np.pi)
-                    joint_limits_max = np.full(23, np.pi)
+            # # ----------------- mouse joint interaction (simple) -----------------
+            # # Register callbacks once (attach to viewer.window). We set them here so
+            # # they run in the same context as the viewer. Left-click to select the
+            # # nearest joint marker; while holding left button, horizontal mouse
+            # # movement will change the corresponding joint DOF (qpos index offset by 7).
+            # try:
+            #     if not hasattr(viewer, '_mouse_callbacks_registered'):
+            #         selected = {'dof': None}
+            #         last_cursor = {'x': 0.0, 'y': 0.0}
+            #         sensitivity = 0.01  # angle per pixel
+            #         pick_threshold = 0.35  # meters (fallback spatial threshold)
+            #         original_colors = {}
+            #         joint_limits_min = np.full(23, -np.pi)
+            #         joint_limits_max = np.full(23, np.pi)
 
-                    def _get_camera_frame():
-                        cam = viewer.cam
-                        lookat = np.array(cam.lookat)
-                        az = np.deg2rad(cam.azimuth)
-                        el = np.deg2rad(cam.elevation)
-                        dist_cam = cam.distance
-                        cam_pos = lookat + dist_cam * np.array([
-                            np.cos(el) * np.sin(az),
-                            -np.cos(el) * np.cos(az),
-                            np.sin(el)
-                        ])
-                        forward = lookat - cam_pos
-                        forward /= (np.linalg.norm(forward) + 1e-9)
-                        world_up = np.array([0., 0., 1.])
-                        right = np.cross(forward, world_up)
-                        if np.linalg.norm(right) < 1e-6:
-                            right = np.array([1., 0., 0.])
-                        else:
-                            right /= np.linalg.norm(right)
-                        up = np.cross(right, forward)
-                        up /= (np.linalg.norm(up) + 1e-9)
-                        return cam_pos, lookat, forward, right, up
+            #         def _get_camera_frame():
+            #             cam = viewer.cam
+            #             lookat = np.array(cam.lookat)
+            #             az = np.deg2rad(cam.azimuth)
+            #             el = np.deg2rad(cam.elevation)
+            #             dist_cam = cam.distance
+            #             cam_pos = lookat + dist_cam * np.array([
+            #                 np.cos(el) * np.sin(az),
+            #                 -np.cos(el) * np.cos(az),
+            #                 np.sin(el)
+            #             ])
+            #             forward = lookat - cam_pos
+            #             forward /= (np.linalg.norm(forward) + 1e-9)
+            #             world_up = np.array([0., 0., 1.])
+            #             right = np.cross(forward, world_up)
+            #             if np.linalg.norm(right) < 1e-6:
+            #                 right = np.array([1., 0., 0.])
+            #             else:
+            #                 right /= np.linalg.norm(right)
+            #             up = np.cross(right, forward)
+            #             up /= (np.linalg.norm(up) + 1e-9)
+            #             return cam_pos, lookat, forward, right, up
 
-                    def _project_to_screen(pos):
-                        try:
-                            vp = viewer.viewport
-                            w, h = vp.width, vp.height
-                            cam_pos, lookat, forward, right, up = _get_camera_frame()
-                            vec = pos - cam_pos
-                            zc = np.dot(vec, forward)
-                            if zc <= 1e-6:
-                                return None
-                            xc = np.dot(vec, right)
-                            yc = np.dot(vec, up)
-                            fov = np.deg2rad(60.0)
-                            aspect = w / (h + 1e-9)
-                            sx = 0.5 + (xc / zc) / (np.tan(fov/2) * aspect) * 0.5
-                            sy = 0.5 - (yc / zc) / (np.tan(fov/2)) * 0.5
-                            return np.array([sx * w, sy * h])
-                        except Exception:
-                            return None
+            #         def _project_to_screen(pos):
+            #             try:
+            #                 vp = viewer.viewport
+            #                 w, h = vp.width, vp.height
+            #                 cam_pos, lookat, forward, right, up = _get_camera_frame()
+            #                 vec = pos - cam_pos
+            #                 zc = np.dot(vec, forward)
+            #                 if zc <= 1e-6:
+            #                     return None
+            #                 xc = np.dot(vec, right)
+            #                 yc = np.dot(vec, up)
+            #                 fov = np.deg2rad(60.0)
+            #                 aspect = w / (h + 1e-9)
+            #                 sx = 0.5 + (xc / zc) / (np.tan(fov/2) * aspect) * 0.5
+            #                 sy = 0.5 - (yc / zc) / (np.tan(fov/2)) * 0.5
+            #                 return np.array([sx * w, sy * h])
+            #             except Exception:
+            #                 return None
 
-                    def _pick_nearest_joint(x, y):
-                        # Try precise screen-space projection first, fallback to spatial score
-                        best_idx = None
-                        best_dist = float('inf')
-                        for i in range(23):
-                            pos = joint_gt[curr_time, i+1]
-                            screen = _project_to_screen(pos)
-                            if screen is not None:
-                                d2 = np.linalg.norm(screen - np.array([x, y]))
-                                if d2 < best_dist:
-                                    best_dist = d2
-                                    best_idx = i
+            #         def _pick_nearest_joint(x, y):
+            #             # Try precise screen-space projection first, fallback to spatial score
+            #             best_idx = None
+            #             best_dist = float('inf')
+            #             for i in range(23):
+            #                 pos = joint_gt[curr_time, i+1]
+            #                 screen = _project_to_screen(pos)
+            #                 if screen is not None:
+            #                     d2 = np.linalg.norm(screen - np.array([x, y]))
+            #                     if d2 < best_dist:
+            #                         best_dist = d2
+            #                         best_idx = i
 
-                        if best_idx is not None and best_dist < 60.0:  # pixels threshold
-                            return best_idx
+            #             if best_idx is not None and best_dist < 60.0:  # pixels threshold
+            #                 return best_idx
 
-                        # fallback to previous approximate spatial metric
-                        best_idx = None
-                        best_score = float('inf')
-                        cam_pos, lookat, forward, right, up = _get_camera_frame()
-                        for i in range(23):
-                            pos = joint_gt[curr_time, i+1]
-                            vec = pos - cam_pos
-                            d = np.linalg.norm(vec)
-                            cosang = np.dot(vec, forward) / (np.linalg.norm(vec) * np.linalg.norm(forward) + 1e-9)
-                            cosang = np.clip(cosang, -1.0, 1.0)
-                            ang = np.arccos(cosang)
-                            score = ang * d
-                            if score < best_score:
-                                best_score = score
-                                best_idx = i
+            #             # fallback to previous approximate spatial metric
+            #             best_idx = None
+            #             best_score = float('inf')
+            #             cam_pos, lookat, forward, right, up = _get_camera_frame()
+            #             for i in range(23):
+            #                 pos = joint_gt[curr_time, i+1]
+            #                 vec = pos - cam_pos
+            #                 d = np.linalg.norm(vec)
+            #                 cosang = np.dot(vec, forward) / (np.linalg.norm(vec) * np.linalg.norm(forward) + 1e-9)
+            #                 cosang = np.clip(cosang, -1.0, 1.0)
+            #                 ang = np.arccos(cosang)
+            #                 score = ang * d
+            #                 if score < best_score:
+            #                     best_score = score
+            #                     best_idx = i
 
-                        if best_idx is not None:
-                            pos_best = joint_gt[curr_time, best_idx+1]
-                            if np.linalg.norm(pos_best - (lookat)) > 3.0 and best_score > pick_threshold:
-                                return None
-                        return best_idx
+            #             if best_idx is not None:
+            #                 pos_best = joint_gt[curr_time, best_idx+1]
+            #                 if np.linalg.norm(pos_best - (lookat)) > 3.0 and best_score > pick_threshold:
+            #                     return None
+            #             return best_idx
 
-                    def _highlight_geom(idx, highlight=True):
-                        geom_idx = idx + 1
-                        try:
-                            if highlight:
-                                # save original
-                                if geom_idx not in original_colors:
-                                    original_colors[geom_idx] = viewer.user_scn.geoms[geom_idx].rgba.copy()
-                                viewer.user_scn.geoms[geom_idx].rgba = np.array([1.0, 1.0, 0.0, 1.0])
-                            else:
-                                if geom_idx in original_colors:
-                                    viewer.user_scn.geoms[geom_idx].rgba = original_colors[geom_idx]
-                                    del original_colors[geom_idx]
-                        except Exception:
-                            ...
+            #         def _highlight_geom(idx, highlight=True):
+            #             geom_idx = idx + 1
+            #             try:
+            #                 if highlight:
+            #                     # save original
+            #                     if geom_idx not in original_colors:
+            #                         original_colors[geom_idx] = viewer.user_scn.geoms[geom_idx].rgba.copy()
+            #                     viewer.user_scn.geoms[geom_idx].rgba = np.array([1.0, 1.0, 0.0, 1.0])
+            #                 else:
+            #                     if geom_idx in original_colors:
+            #                         viewer.user_scn.geoms[geom_idx].rgba = original_colors[geom_idx]
+            #                         del original_colors[geom_idx]
+            #             except Exception:
+            #                 ...
 
-                    def mouse_button_callback(window, button, action, mods):
-                        if button == glfw.MOUSE_BUTTON_LEFT:
-                            x, y = glfw.get_cursor_pos(window)
-                            if action == glfw.PRESS:
-                                last_cursor['x'], last_cursor['y'] = x, y
-                                sel = _pick_nearest_joint(x, y)
-                                selected['dof'] = sel
-                                if sel is not None:
-                                    print(f"Selected joint dof: {sel}")
-                                    _highlight_geom(sel, True)
-                            elif action == glfw.RELEASE:
-                                if selected['dof'] is not None:
-                                    _highlight_geom(selected['dof'], False)
-                                selected['dof'] = None
+            #         def mouse_button_callback(window, button, action, mods):
+            #             if button == glfw.MOUSE_BUTTON_LEFT:
+            #                 x, y = glfw.get_cursor_pos(window)
+            #                 if action == glfw.PRESS:
+            #                     last_cursor['x'], last_cursor['y'] = x, y
+            #                     sel = _pick_nearest_joint(x, y)
+            #                     selected['dof'] = sel
+            #                     if sel is not None:
+            #                         print(f"Selected joint dof: {sel}")
+            #                         _highlight_geom(sel, True)
+            #                 elif action == glfw.RELEASE:
+            #                     if selected['dof'] is not None:
+            #                         _highlight_geom(selected['dof'], False)
+            #                     selected['dof'] = None
 
-                    def cursor_pos_callback(window, xpos, ypos):
-                        if selected['dof'] is None:
-                            return
-                        dx = xpos - last_cursor['x']
-                        # update last cursor immediately so movement is incremental
-                        last_cursor['x'], last_cursor['y'] = xpos, ypos
-                        dof_idx = selected['dof']
-                        if dof_idx is None:
-                            return
-                        qpos_idx = 7 + dof_idx
-                        # apply horizontal motion to joint angle with clamping
-                        val = mj_data.qpos[qpos_idx] + dx * sensitivity
-                        val = float(np.clip(val, joint_limits_min[dof_idx], joint_limits_max[dof_idx]))
-                        mj_data.qpos[qpos_idx] = val
-                        # forward kinematics so the model updates immediately
-                        mujoco.mj_forward(mj_model, mj_data)
+            #         def cursor_pos_callback(window, xpos, ypos):
+            #             if selected['dof'] is None:
+            #                 return
+            #             dx = xpos - last_cursor['x']
+            #             # update last cursor immediately so movement is incremental
+            #             last_cursor['x'], last_cursor['y'] = xpos, ypos
+            #             dof_idx = selected['dof']
+            #             if dof_idx is None:
+            #                 return
+            #             qpos_idx = 7 + dof_idx
+            #             # apply horizontal motion to joint angle with clamping
+            #             val = mj_data.qpos[qpos_idx] + dx * sensitivity
+            #             val = float(np.clip(val, joint_limits_min[dof_idx], joint_limits_max[dof_idx]))
+            #             mj_data.qpos[qpos_idx] = val
+            #             # forward kinematics so the model updates immediately
+            #             mujoco.mj_forward(mj_model, mj_data)
 
-                    glfw.set_mouse_button_callback(viewer.window, mouse_button_callback)
-                    glfw.set_cursor_pos_callback(viewer.window, cursor_pos_callback)
-                    viewer._mouse_callbacks_registered = True
-            except Exception:
-                # safe fallback: if viewer/window or glfw not available, ignore
-                ...
+            #         glfw.set_mouse_button_callback(viewer.window, mouse_button_callback)
+            #         glfw.set_cursor_pos_callback(viewer.window, cursor_pos_callback)
+            #         viewer._mouse_callbacks_registered = True
+            # except Exception:
+            #     # safe fallback: if viewer/window or glfw not available, ignore
+            #     ...
 
     if resave:
         motion_data[curr_motion_key]['contact_mask'] = contact_mask
