@@ -4,7 +4,7 @@ import torch
 from collections import defaultdict
 
 import numpy as np
-from isaac_utils.rotations import (
+from humanoidverse.isaac_utils.isaac_utils.rotations import (
     quaternion_to_matrix,
     wxyz_to_xyzw,
     axis_angle_to_quaternion,
@@ -172,7 +172,8 @@ class Humanoid_Batch:
         pose = pose[..., :len(self._parents), :] # H1 fitted joints might have extra joints
         
         if convert_to_mat:
-            pose_quat = axis_angle_to_quaternion(pose.clone()) # wxyz
+            # pose_quat = axis_angle_to_quaternion(pose.clone()) # wxyz
+            pose_quat = pose.clone()
             pose_mat = quaternion_to_matrix(pose_quat)
         else:
             pose_mat = pose
@@ -260,7 +261,7 @@ class Humanoid_Batch:
                     import ipdb; ipdb.set_trace()
                 # rot_mat = torch.matmul(rotations_world[self._parents[i]], rotations[:, :, (i - 1):i, :])
                 # print(rotations[:, :, (i - 1):i, :].shape, self._local_rotation_mat.shape)
-                
+                print(jpos.shape, rot_mat.shape)
                 positions_world.append(jpos)
                 rotations_world.append(rot_mat)
         

@@ -42,7 +42,7 @@ class RerunURDF():
             mesh = self.link2mesh[frame_name]
             
             frame_id = self.robot.model.getFrameId(frame_name)
-            parent_joint_id = self.robot.model.frames[frame_id].parentJoint
+            parent_joint_id = self.robot.model.frames[frame_id].parent
             parent_joint_name = self.robot.model.names[parent_joint_id]
             frame_tf = self.robot.data.oMf[frame_id]
             joint_tf = self.robot.data.oMi[parent_joint_id]
@@ -69,7 +69,7 @@ class RerunURDF():
         for visual in self.robot.visual_model.geometryObjects:
             frame_name = visual.name[:-2]
             frame_id = self.robot.model.getFrameId(frame_name)
-            parent_joint_id = self.robot.model.frames[frame_id].parentJoint
+            parent_joint_id = self.robot.model.frames[frame_id].parent
             parent_joint_name = self.robot.model.names[parent_joint_id]
             # print(parent_joint_name)
             joint_tf = self.robot.data.oMi[parent_joint_id]

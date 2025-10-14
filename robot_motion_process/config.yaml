@@ -1,0 +1,7 @@
+# config.yaml
+motion_file: "/home/z/Desktop/PBHC/example/pretrained_horse_stance_pose/metrics/ckpt_50000/tmp.pkl"   # 必须的 motion 文件
+stand_still: false
+frames: 600
+height: 0.9
+speed: 1.0
+hang: false

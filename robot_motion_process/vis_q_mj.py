@@ -30,7 +30,7 @@ def _make_stand_motion(T=300, height=0.85):
     """Make a simple standing motion"""
     root_trans = np.tile(np.array([[0., 0., height]], dtype=np.float32), (T,1))
     root_rot   = np.tile(np.array([[0., 0., 0., 1.]], dtype=np.float32), (T,1))  # xyzw
-    dof        = np.zeros((T, 23), dtype=np.float32)  # 23 dofs for g1_23dof
+    dof        = np.zeros((T, 29), dtype=np.float32)  # 23 dofs for g1_23dof
     motion = {
         'fps': 30,
         'root_trans_offset': root_trans,
@@ -91,7 +91,7 @@ def key_call_back( keycode):
     
     
         
-@hydra.main(version_base=None)
+@hydra.main(version_base=None, config_path=".", config_name="config")
 def main(cfg : DictConfig) -> None:
     # TODO A: stand config
     stand_still = bool(getattr(cfg, "stand_still", False))
@@ -111,6 +111,8 @@ def main(cfg : DictConfig) -> None:
         curr_motion_key = motion_data_keys[0]
         curr_motion = motion_data[curr_motion_key]
         dt = 1.0 / curr_motion['fps']
+        hang = False
+        speed = 0.0
         contact_mask = None
         curr_time = 0
         resave = False
@@ -143,7 +145,7 @@ def main(cfg : DictConfig) -> None:
         resave = False
 
 
-    humanoid_xml = "./description/robots/g1/g1_23dof_lock_wrist.xml"
+    humanoid_xml = "./description/robots/g1/g1_29dof_rev_1_0.xml"
     print(humanoid_xml)
     
     vis_smpl = False if 'vis_smpl' not in cfg else cfg.vis_smpl
@@ -158,12 +160,54 @@ def main(cfg : DictConfig) -> None:
     if not vis_smpl:
         cfg_robot = OmegaConf.load("description/robots/g1/phc_g1_23dof.yaml")
         humanoid_fk = Humanoid_Batch(cfg_robot)  # load forward kinematics model
-        pose_aa = torch.from_numpy(curr_motion['pose_aa']).unsqueeze(0)
-        root_trans = torch.from_numpy(curr_motion['root_trans_offset']).unsqueeze(0)
-        fk_return = humanoid_fk.fk_batch(pose_aa, root_trans)
+
+        # ---------------- 转 quaternion ----------------
+        def motion_to_quat(curr_motion):
+            # root_trans (T,3) -> tensor (1,T,3)
+            root_trans = torch.from_numpy(curr_motion['root_trans_offset']).float().unsqueeze(0)
+            
+            if 'pose_aa' in curr_motion:
+                axis_angle = curr_motion['pose_aa']  # (T, J, 3)
+                T, J, _ = axis_angle.shape
+                quat_list = []
+                for t in range(T):
+                    # 转所有关节的旋转向量为 quaternion
+                    q_j = sRot.from_rotvec(axis_angle[t]).as_quat()  # xyzw
+                    q_j = q_j[:, [3,0,1,2]]  # 转 wxyz
+                    quat_list.append(q_j)
+                pose_quat = np.stack(quat_list, axis=0)  # (T,J,4)
+            elif 'dof' in curr_motion:
+                dof = curr_motion['dof']  # (T, J)
+                T, J = dof.shape
+                quat_list = []
+                for t in range(T):
+                    q_joints = []
+                    for j in range(J):
+                        r = sRot.from_euler('z', dof[t,j])  # 假设绕 z 轴旋转
+                        q = r.as_quat()                       # xyzw
+                        q = np.array([q[3], q[0], q[1], q[2]])  # 转 wxyz
+                        q_joints.append(q)
+                    q_joints = np.stack(q_joints, axis=0)  # (J,4)
+                    quat_list.append(q_joints)
+                pose_quat = np.stack(quat_list, axis=0)   # (T,J,4)
+            else:
+                raise KeyError("curr_motion 中没有 pose_aa 或 dof")
+
+            # 转 tensor 并加 batch 维度
+            pose_quat = torch.from_numpy(pose_quat).float().unsqueeze(0)  # (1,T,J,4)
+            return pose_quat, root_trans  # (1,T,J,4), (1,T,3)
+
+
+        pose_quat, root_trans = motion_to_quat(curr_motion)
+
+        print("[DEBUG] pose_quat.shape:", pose_quat.shape)
+        print("[DEBUG] pose_quat example:", pose_quat.view(-1, pose_quat.shape[-1])[0])
+        print("[DEBUG] last_dim unique:", torch.unique(torch.tensor([p.shape[-1] for p in pose_quat.view(-1, 1, 1, pose_quat.shape[-1])])).tolist())
+
+        fk_return = humanoid_fk.fk_batch(pose_quat, root_trans)
         joint_gt = fk_return.global_translation_extend[0]
     
-    
+
     mj_model = mujoco.MjModel.from_xml_path(humanoid_xml)
     mj_data = mujoco.MjData(mj_model)
     mj_model.opt.timestep = dt
