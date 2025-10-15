@@ -200,10 +200,6 @@ def main(cfg : DictConfig) -> None:
 
         pose_quat, root_trans = motion_to_quat(curr_motion)
 
-        print("[DEBUG] pose_quat.shape:", pose_quat.shape)
-        print("[DEBUG] pose_quat example:", pose_quat.view(-1, pose_quat.shape[-1])[0])
-        print("[DEBUG] last_dim unique:", torch.unique(torch.tensor([p.shape[-1] for p in pose_quat.view(-1, 1, 1, pose_quat.shape[-1])])).tolist())
-
         fk_return = humanoid_fk.fk_batch(pose_quat, root_trans)
         joint_gt = fk_return.global_translation_extend[0]
     

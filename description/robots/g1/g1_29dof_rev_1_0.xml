@@ -40,7 +40,7 @@
   </asset>
 
   <worldbody>
-    <body name="pelvis" pos="0 0 0.793">
+    <body name="pelvis" pos="0 0 1.6">
       <inertial pos="0 0 -0.07605" quat="1 0 -0.000399148 0" mass="3.813" diaginertia="0.010549 0.0093089 0.0079184"/>
       <joint name="floating_base_joint" type="free" limited="false" actuatorfrclimited="false"/>
       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.2 0.2 0.2 1" mesh="pelvis"/>
@@ -178,7 +178,7 @@
                           <joint name="left_wrist_yaw_joint" pos="0 0 0" axis="0 0 1" range="-1.61443 1.61443" actuatorfrcrange="-5 5"/>
                           <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.7 0.7 0.7 1" mesh="left_wrist_yaw_link"/>
                           <geom type="mesh" rgba="0.7 0.7 0.7 1" mesh="left_wrist_yaw_link"/>
-                          <geom pos="0.0415 0.003 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.7 0.7 0.7 1" mesh="left_rubber_hand"/>
+                          <geom pos="0.0415 0.003 0" quat="1 0 0 0" type="mesh" contype="1" conaffinity="1" group="1" density="0" rgba="0.7 0.7 0.7 1" mesh="left_rubber_hand"/>
                         </body>
                       </body>
                     </body>
@@ -221,7 +221,7 @@
                           <joint name="right_wrist_yaw_joint" pos="0 0 0" axis="0 0 1" range="-1.61443 1.61443" actuatorfrcrange="-5 5"/>
                           <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.7 0.7 0.7 1" mesh="right_wrist_yaw_link"/>
                           <geom type="mesh" rgba="0.7 0.7 0.7 1" mesh="right_wrist_yaw_link"/>
-                          <geom pos="0.0415 -0.003 0" quat="1 0 0 0" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.7 0.7 0.7 1" mesh="right_rubber_hand"/>
+                          <geom pos="0.0415 -0.003 0" quat="1 0 0 0" type="mesh" contype="1" conaffinity="1" group="1" density="0" rgba="0.7 0.7 0.7 1" mesh="right_rubber_hand"/>
                         </body>
                       </body>
                     </body>
@@ -287,8 +287,65 @@
     <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8" width="300" height="300"/>
     <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
   </asset>
-  <worldbody>
+  <!-- <worldbody>
     <light pos="1 0 3.5" dir="0 0 -1" directional="true"/>
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+  </worldbody> -->
+
+  <!-- RAMP -->
+  <!-- <worldbody>
+    <light pos="1 0 3.5" dir="0 0 -1" directional="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+    <geom name="ramp"
+          type="box"
+          size="8.0 1.0 0.05"
+          pos="2.0 0 0.05"
+          quat="0.9962 0 0.0872 0"
+          rgba="0.45 0.45 0.45 1"
+          material="groundplane"
+          contype="1"
+          conaffinity="1"/>
+  </worldbody> -->
+
+  <worldbody>
+    <!-- 光源 -->
+    <light pos="1 0 3.5" dir="0 0 -1" directional="true"/>
+    <!-- 地面 -->
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+    <!-- 楼梯 -->
+    <body name="stairs" pos="1.8 0 0">
+      <!-- 第1级 -->
+      <geom name="stair_1" type="box"
+            size="0.25 1.0 0.05"
+            pos="-0.25 0 0.05"
+            rgba="0.4 0.4 0.4 1"
+            material="groundplane" contype="1" conaffinity="1"/>
+      <!-- 第2级 -->
+      <geom name="stair_2" type="box"
+            size="0.25 1.0 0.05"
+            pos="-0.75 0 0.15"
+            rgba="0.45 0.45 0.45 1"
+            material="groundplane" contype="1" conaffinity="1"/>
+      <!-- 第3级 -->
+      <geom name="stair_3" type="box"
+            size="0.25 1.0 0.05"
+            pos="-1.25 0 0.25"
+            rgba="0.45 0.45 0.45 1"
+            material="groundplane" contype="1" conaffinity="1"/>
+      <!-- 第4级 -->
+      <geom name="stair_4" type="box"
+            size="0.25 1.0 0.05"
+            pos="-1.75 0 0.35"
+            rgba="0.55 0.55 0.55 1"
+            material="groundplane" contype="1" conaffinity="1"/>
+      <!-- 第5级 -->
+      <geom name="stair_5" type="box"
+            size="0.25 1.0 0.05"
+            pos="-2.25 0 0.45"
+            rgba="0.6 0.6 0.6 1"
+            material="groundplane" contype="1" conaffinity="1"/>
+    </body>
   </worldbody>
+
+
 </mujoco>
