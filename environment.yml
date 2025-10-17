@@ -1,0 +1,43 @@
+name: test
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.8
+  - pip
+  - numpy=1.24.4
+  - matplotlib
+  - scipy
+  - tqdm
+  - tensorboard
+  - pip:
+      - hydra-core>=1.2.0
+      - mujoco==3.2.3
+      - mujoco-python-viewer
+      - rich
+      - ipdb
+      - termcolor
+      - wandb
+      - plotly
+      - loguru
+      - meshcat
+      - pynput
+      - onnx
+      - onnxruntime
+      - opencv-python
+      - joblib
+      - easydict
+      - lxml
+      - numpy-stl
+      - open3d
+      - toolz
+      - typer
+      - dm_control
+      - loop_rate_limiters
+      - mink
+      - quadprog
+      - einops
+
+      - -e .
+      - -e humanoidverse/isaac_utils
+
