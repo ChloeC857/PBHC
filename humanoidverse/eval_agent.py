@@ -2,6 +2,11 @@ import os
 import sys
 from pathlib import Path
 
+# 添加项目根目录到 Python 路径
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 import hydra
 from hydra.utils import instantiate
 from hydra.core.hydra_config import HydraConfig
@@ -9,10 +14,10 @@ from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 from humanoidverse.utils.logging import HydraLoggerBridge
 import logging
-from utils.config_utils import *  # noqa: E402, F403
+from humanoidverse.utils.config_utils import *  # noqa: E402, F403
 
 # add argparse arguments
-from utils.devtool import pdb_decorator
+from humanoidverse.utils.devtool import pdb_decorator
 from humanoidverse.utils.config_utils import *  # noqa: E402, F403
 from loguru import logger
 

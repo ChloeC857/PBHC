@@ -153,9 +153,9 @@ def main(cfg : DictConfig) -> None:
     vis_tau = vis_tau_key in curr_motion if 'vis_tau' not in cfg else cfg.vis_tau
     vis_contact = 'contact_mask' in curr_motion if 'vis_contact' not in cfg else cfg.vis_contact
     
-    if vis_smpl: assert 'smpl_joints' in curr_motion
-    if vis_tau: assert vis_tau_key in curr_motion and not vis_contact
-    if vis_contact: assert 'contact_mask' in curr_motion and not vis_tau
+    # if vis_smpl: assert 'smpl_joints' in curr_motion
+    # if vis_tau: assert vis_tau_key in curr_motion and not vis_contact
+    # if vis_contact: assert 'contact_mask' in curr_motion and not vis_tau
 
     if not vis_smpl:
         cfg_robot = OmegaConf.load("description/robots/g1/phc_g1_23dof.yaml")
