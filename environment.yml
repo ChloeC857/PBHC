@@ -1,16 +1,21 @@
-name: test
+name: humanoid-safe-fall
 channels:
   - defaults
   - conda-forge
 dependencies:
   - python=3.8
   - pip
-  - numpy=1.24.4
-  - matplotlib
-  - scipy
-  - tqdm
-  - tensorboard
+  # - numpy=1.24.4
+  # - matplotlib
+  # - scipy
+  # - tqdm
+  # - tensorboard
   - pip:
+      - numpy==1.24.4
+      - matplotlib
+      - scipy
+      - tqdm
+      - tensorboard
       - hydra-core>=1.2.0
       - mujoco==3.2.3
       - mujoco-python-viewer
