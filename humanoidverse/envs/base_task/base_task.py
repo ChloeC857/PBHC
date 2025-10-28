@@ -18,6 +18,7 @@ from termcolor import colored
 # Base class for RL tasks
 class BaseTask():
     def __init__(self, config, device):
+        print("Step 5/999: Initializing BaseTask")
         self.config = config
         # optimization flags for pytorch JIT
         torch._C._jit_set_profiling_mode(False)
@@ -51,6 +52,7 @@ class BaseTask():
         self._load_assets()
         self._get_env_origins()
         self._create_envs()
+        print("Step 6/999 (base_task.py): Test Bug")
         self.dof_pos_limits, self.dof_vel_limits, self.torque_limits = self.simulator.get_dof_limits_properties()
         self._setup_robot_body_indices()
         # self._create_sim()
@@ -177,11 +179,13 @@ class BaseTask():
         if hasattr(self.config.robot, 'head_name'):
             head_names = [s for s in self.body_names if self.config.robot.head_name in s]
             if len(head_names) > 0:
-                print(f"Step 5/999: Found head body for contact checking: {head_names[0]}")
+                print(f"Step 6/999 Success (base_task.py): Found head body for contact checking: {head_names[0]}")
                 self.head_contact_indices = self.simulator.find_rigid_body_indice(head_names[0])
             else:
+                print("Step 6/999 Failed (base_task.py): Found head body for contact checking")
                 self.head_contact_indices = None
         else:
+            print("Step 6/999 Failed (base_task.py): Found head body for contact checking")
             self.head_contact_indices = None
             
         penalized_contact_names = []

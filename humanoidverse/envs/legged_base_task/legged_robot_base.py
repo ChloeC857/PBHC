@@ -34,6 +34,7 @@ class LeggedRobotBase(BaseTask):
         self._domain_rand_config()
         self._prepare_reward_function()
         self.history_handler = HistoryHandler(self.num_envs, config.obs.obs_auxiliary, config.obs.obs_dims, device)
+        print("Step 7/999 (legged_robot_base.py): For debugging")
         self.is_evaluating = False
         self.init_done = True
 
