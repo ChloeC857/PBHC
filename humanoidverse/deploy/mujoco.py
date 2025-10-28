@@ -34,7 +34,7 @@ def wrap_to_pi_float(angles:float):
 
 
 class MViewerPlugin:
-    # TODO: visualize the motion keypoint in MujocoViewer
+    # Done: visualize the motion keypoint in MujocoViewer
     is_pause = False
     
     def _make_viewer(self):
@@ -107,7 +107,7 @@ class MViewerPlugin:
 
 
 class ViewerPlugin:
-    # TODO: visualize the motion keypoint in MujocoViewer
+    # Done: visualize the motion keypoint in MujocoViewer
     
     is_recording = False
     fps = 30

@@ -26,22 +26,33 @@ rewards:
       # penalty_dof_acc: -2.5e-8
       penalty_action_rate: -0.5 # need to be tuned up to -0.5 for real robot
 
-      feet_air_time: 1.0
-      penalty_feet_contact_forces: -0.01
+      # feet_air_time: 1.0
+      feet_air_time: 0.0
+      # penalty_feet_contact_forces: -0.01
+      penalty_feet_contact_forces: 0.0
+      penalty_head_contact_forces: -0.2 # newly added for safe falling
       penalty_stumble: -2.0
       penalty_slippage: -1.0
 
       limits_dof_pos: -10.0
       limits_dof_vel: -5.0
       limits_torque: -5.0
-      termination: -200.0
-      collision: -30.0
+      # terminate when falling
+      # termination: -200.0
+      termination: 0.0
+      # penalty for collision with environment or ground
+      # collision: -30.0
+      collision: 0.0
+      # collision_parts: 0.0
+      collision_head: -10.0
+      # collision_back: 0.0
       
 
   teleop_body_pos_lowerbody_weight : 1.0
   teleop_body_pos_upperbody_weight : 1.0
 
-  desired_feet_max_height_for_this_air: 0.2
+  # desired_feet_max_height_for_this_air: 0.2
+  desired_feet_max_height_for_this_air: 0.05
 
   reward_tracking_sigma:
     teleop_max_joint_pos: 1.0
@@ -65,7 +76,8 @@ rewards:
 
 
   locomotion_max_contact_force: 400.0
-  desired_feet_air_time: 0.3
+  # desired_feet_air_time: 0.3
+  desired_feet_air_time: 0.0
 
   reward_penalty_curriculum: True
   reward_initial_penalty_scale : 0.10

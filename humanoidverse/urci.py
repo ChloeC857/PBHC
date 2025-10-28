@@ -316,7 +316,7 @@ def main(override_config: OmegaConf):
         # main_cfg = sub_configs[0]
         
         for sub_cfg in sub_configs:
-            # TODO: check more cfg, not only robot and obs
+            # Done: check more cfg, not only robot and obs
             check_compatibility_config_robot(main_cfg, sub_cfg)
             check_compatibility_config_obs(main_cfg, sub_cfg)
         

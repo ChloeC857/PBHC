@@ -116,6 +116,8 @@ def main(config: OmegaConf):
     # Set up environment and experiment directory
     # ============================================================================
     
+    print("Step 1/999 (train_agent.py): Setting up environment and experiment directory")
+    
     # Pre-process config (resolve paths, validate settings)
     pre_process_config(config)
 

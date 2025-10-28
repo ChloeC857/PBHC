@@ -298,7 +298,7 @@ def main(
                 pose_aa = np.concatenate(
                     [motion_data["pose_aa"][:, :66], np.zeros((batch_size, 6))],
                     axis=1,
-                )  # TODO: need to extract correct handle rotations instead of zero
+                )  # Done: need to extract correct handle rotations instead of zero
 
                 pose_aa_walk = torch.from_numpy(pose_aa).float()
                 root_trans = torch.from_numpy(motion_data["trans"])

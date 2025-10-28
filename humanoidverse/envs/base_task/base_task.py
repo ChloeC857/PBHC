@@ -172,6 +172,18 @@ class BaseTask():
     def _setup_robot_body_indices(self):
         feet_names = [s for s in self.body_names if self.config.robot.foot_name in s]
         knee_names = [s for s in self.body_names if self.config.robot.knee_name in s]
+        
+        # TODO: add head contact names
+        if hasattr(self.config.robot, 'head_name'):
+            head_names = [s for s in self.body_names if self.config.robot.head_name in s]
+            if len(head_names) > 0:
+                print(f"Step 5/999: Found head body for contact checking: {head_names[0]}")
+                self.head_contact_indices = self.simulator.find_rigid_body_indice(head_names[0])
+            else:
+                self.head_contact_indices = None
+        else:
+            self.head_contact_indices = None
+            
         penalized_contact_names = []
         for name in self.config.robot.penalize_contacts_on:
             penalized_contact_names.extend([s for s in self.body_names if name in s])

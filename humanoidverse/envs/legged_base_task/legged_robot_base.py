@@ -28,6 +28,7 @@ import copy
 
 class LeggedRobotBase(BaseTask):
     def __init__(self, config, device):
+        print("Step 4/999 (legged_robot_base.py): Initializing LeggedRobotBase environment")
         self.init_done = False
         super().__init__(config, device)
         self._domain_rand_config()
@@ -149,6 +150,7 @@ class LeggedRobotBase(BaseTask):
         """ Prepares a list of reward functions, whcih will be called to compute the total reward.
             Looks for self._reward_<REWARD_NAME>, where <REWARD_NAME> are names of all non zero reward scales in the cfg.
         """
+        
         logger.info(colored(f"{self.config.rewards.set_reward} set reward on {self.config.rewards.set_reward_date}", "green"))
         
         self.reward_scales = self.config.rewards.reward_scales
@@ -211,6 +213,7 @@ class LeggedRobotBase(BaseTask):
         if self.config.use_vec_reward:
             # reward_fn_state.reward_functions = [reward_fn_state.reward_functions[0]]
             num_rew_fn = len(self.reward_functions)+1
+            print(f"CXY: number of reward function is {num_rew_fn}!!!!")
             self.rew_buf = torch.zeros(self.num_envs, num_rew_fn, dtype=torch.float, device=self.device, requires_grad=False)
 
     def set_is_evaluating(self):
@@ -679,6 +682,7 @@ class LeggedRobotBase(BaseTask):
             "feet_air_max_height": copy.deepcopy(self.feet_air_max_height[env_ids]),
         }
 
+    # TODO
     def _compute_reward(self):
         """ Compute rewards
             Calls each reward function which had a non-zero scale (processed in self._prepare_reward_function())
@@ -686,6 +690,7 @@ class LeggedRobotBase(BaseTask):
         """
         self.rew_buf[:] = 0.
         for i in range(len(self.reward_functions)):
+            print(f"Step {7+i}/999 (legged_robot_env.py): computing reward function ", self.reward_names[i])
             name = self.reward_names[i]
             rew = self.reward_functions[i]() * self.reward_scales[name]
             try:
@@ -727,6 +732,7 @@ class LeggedRobotBase(BaseTask):
         if self.add_noise_currculum:
             self.log_dict["current_noise_curriculum_value"] = torch.tensor(self.current_noise_curriculum_value, dtype=torch.float)
 
+    # TODO
     def _compute_observations(self):
         """ Computes observations
         """
@@ -1043,6 +1049,9 @@ class LeggedRobotBase(BaseTask):
         # Penalize collisions on selected bodies
         return torch.sum(1.*(torch.norm(self.simulator.contact_forces[:, self.penalised_contact_indices, :], dim=-1) > 0.1), dim=1)
     
+    def _reward_collision_head(self):
+        # Penalize collisions on selected bodies
+        return torch.sum(1.*(torch.norm(self.simulator.contact_forces[:, self.head_contact_indices, :], dim=-1) > 0.1), dim=1)
 
     def _push_robots(self, env_ids):
         """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity. 
@@ -1173,4 +1182,5 @@ class LeggedRobotBase(BaseTask):
     
     @property
     def num_rew_fn(self):
+        print("CXY: Updated num_rew_fn called !!!")
         return len(self.reward_functions)+1 if self.config.use_vec_reward else 1

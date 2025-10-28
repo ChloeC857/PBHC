@@ -96,6 +96,7 @@ def radial_velocity_potential(cur_vel, ref_vel, sigma_theta=0.75, alpha_norm=0.4
 
 class LeggedRobotMotionTracking(LeggedRobotBase):
     def __init__(self, config, device):
+        print("Step 3/999 (motion_tracking.py): Initializing LeggedRobotMotionTracking environment, where needs to update the calculation of rewards and resets")
         self.init_done = False
         self.debug_viz = True
         
@@ -1151,6 +1152,7 @@ class LeggedRobotMotionTracking(LeggedRobotBase):
         # print('dof pos threshold',torch.norm(self.dif_joint_angles, dim=-1).max(dim=-1)[0])
         ...
 
+    # TODO
     def _reward_teleop_contact_mask(self):
         cur_contact_mask = self.contacts_filt
         ref_contact_mask = self.ref_contact_mask
@@ -1321,6 +1323,12 @@ class LeggedRobotMotionTracking(LeggedRobotBase):
     def _reward_penalty_feet_contact_forces(self):
         # penalize high contact forces
         return torch.sum((torch.norm(self.simulator.contact_forces[:, self.feet_indices, :], dim=-1) -  self.config.rewards.locomotion_max_contact_force).clip(min=0.), dim=1)
+    
+    def _reward_penalty_head_contact_forces(self):
+        # penalize head contact forces
+        if self.head_contact_indices is None:
+            return torch.zeros(self.num_envs, device=self.device)
+        return torch.sum((torch.norm(self.simulator.contact_forces[:, self.head_contact_indices, :], dim=-1) -  self.config.rewards.locomotion_max_head_contact_force).clip(min=0.), dim=1)
     
     def _reward_penalty_stumble(self):
         # Penalize feet hitting vertical surfaces
