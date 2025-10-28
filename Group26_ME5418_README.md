@@ -10,10 +10,14 @@ Before getting started, ensure that IssacGym is correctly installed and tested. 
 conda env create -f environment.yml
 conda activate humanoid-safe-fall
 
-## install and test isaacgym
+# install and test isaacgym
 wget https://developer.nvidia.com/isaac-gym-preview-4
 tar -xvzf isaac-gym-preview-4
 pip install -e isaacgym/python
+
+# Install PBHC
+pip install -e .
+pip install -e humanoidverse/isaac_utils
 ```
 
 ## Project Structure
@@ -29,7 +33,7 @@ Note: Other folders are not used in the current stage.
 
 ## Policy Training
 
-Replace `<MOTION_FILE_PATH>` in the command with the path to the target motion file.
+Replace your MOTION_FILE_PATH in the command with the path to the target motion file.
 We set 35,000 iterations for walking policy training.
 ```bash
 python humanoidverse/train_agent.py \
@@ -47,12 +51,12 @@ seed=1 \
 
 ## Demo Running
 
-Replace `<PT_FILE_PATH>` in the command to convert a `.pt` file into an `.onnx` file. This command will also run the trained policy with the visualization in IssacGym. Our trained model is saved in `training_outputs/model_30000.pt`
+Replace your PT_FILE_PATH in the command to convert a `.pt` file into an `.onnx` file. This command will also run the trained policy with the visualization in IssacGym. S
 ```bash
 python humanoidverse/eval_agent.py \
 +device=cuda:0 \
 +env.config.enforce_randomize_motion_start_eval=False \
-+checkpoint=<PT_FILE_PATH>
++checkpoint=training_outputs/model_30000.pt
 ```
 
 ## Results

@@ -1324,11 +1324,11 @@ class LeggedRobotMotionTracking(LeggedRobotBase):
         # penalize high contact forces
         return torch.sum((torch.norm(self.simulator.contact_forces[:, self.feet_indices, :], dim=-1) -  self.config.rewards.locomotion_max_contact_force).clip(min=0.), dim=1)
     
-    def _reward_penalty_head_contact_forces(self):
-        # penalize head contact forces
-        if self.head_contact_indices is None:
-            return torch.zeros(self.num_envs, device=self.device)
-        return torch.sum((torch.norm(self.simulator.contact_forces[:, self.head_contact_indices, :], dim=-1) -  self.config.rewards.locomotion_max_head_contact_force).clip(min=0.), dim=1)
+    # def _reward_penalty_head_contact_forces(self):
+    #     # penalize head contact forces
+    #     if self.head_contact_indices is None:
+    #         return torch.zeros(self.num_envs, device=self.device)
+    #     return torch.sum((torch.norm(self.simulator.contact_forces[:, self.head_contact_indices, :], dim=-1) -  self.config.rewards.locomotion_max_head_contact_force).clip(min=0.), dim=1)
     
     def _reward_penalty_stumble(self):
         # Penalize feet hitting vertical surfaces

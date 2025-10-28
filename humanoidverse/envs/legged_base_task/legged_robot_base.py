@@ -1050,9 +1050,9 @@ class LeggedRobotBase(BaseTask):
         # Penalize collisions on selected bodies
         return torch.sum(1.*(torch.norm(self.simulator.contact_forces[:, self.penalised_contact_indices, :], dim=-1) > 0.1), dim=1)
     
-    def _reward_collision_head(self):
-        # Penalize collisions on selected bodies
-        return torch.sum(1.*(torch.norm(self.simulator.contact_forces[:, self.head_contact_indices, :], dim=-1) > 0.1), dim=1)
+    # def _reward_collision_head(self):
+    #     # Penalize collisions on selected bodies
+    #     return torch.sum(1.*(torch.norm(self.simulator.contact_forces[:, self.head_contact_indices, :], dim=-1) > 0.1), dim=1)
 
     def _push_robots(self, env_ids):
         """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity. 

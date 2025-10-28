@@ -176,17 +176,17 @@ class BaseTask():
         knee_names = [s for s in self.body_names if self.config.robot.knee_name in s]
         
         # TODO: add head contact names
-        if hasattr(self.config.robot, 'head_name'):
-            head_names = [s for s in self.body_names if self.config.robot.head_name in s]
-            if len(head_names) > 0:
-                print(f"Step 6/999 Success (base_task.py): Found head body for contact checking: {head_names[0]}")
-                self.head_contact_indices = self.simulator.find_rigid_body_indice(head_names[0])
-            else:
-                print("Step 6/999 Failed (base_task.py): Found head body for contact checking")
-                self.head_contact_indices = None
-        else:
-            print("Step 6/999 Failed (base_task.py): Found head body for contact checking")
-            self.head_contact_indices = None
+        # if hasattr(self.config.robot, 'head_name'):
+        #     head_names = [s for s in self.body_names if self.config.robot.head_name in s]
+        #     if len(head_names) > 0:
+        #         print(f"Step 6/999 Success (base_task.py): Found head body for contact checking: {head_names[0]}")
+        #         self.head_contact_indices = self.simulator.find_rigid_body_indice(head_names[0])
+        #     else:
+        #         print("Step 6/999 Failed (base_task.py): head names length 0")
+        #         self.head_contact_indices = None
+        # else:
+        #     print("Step 6/999 Failed (base_task.py): head names not found")
+        #     self.head_contact_indices = None
             
         penalized_contact_names = []
         for name in self.config.robot.penalize_contacts_on:
