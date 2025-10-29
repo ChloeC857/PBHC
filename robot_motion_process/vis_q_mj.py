@@ -222,7 +222,7 @@ def get_xml_path_for_terrain(terrain:str):
         str: Path to corresponding XML file
     """
     if terrain == 'flat':
-        humanoid_xml = "description/robots/g1/g1_23dof_lock_wrist_flat.xml"
+        humanoid_xml = "description/robots/g1/g1_29dof_rev_1_0.xml"
     elif terrain == 'ramp':
         humanoid_xml = "description/robots/g1/g1_23dof_lock_wrist_ramp.xml"
     elif terrain == 'stair':
@@ -274,6 +274,7 @@ def main(cfg : DictConfig) -> None:
         print("[INFO] Stand-still visualization.")
 
         humanoid_xml = get_xml_path_for_terrain(terrain)
+        print(f"[INFO] Loading MuJoCo model from: {humanoid_xml}")
         terrain_params = get_terrain_init_params(terrain)
         print(f"[INFO] Terrain: {terrain_params['description']}")
         
@@ -373,6 +374,7 @@ def main(cfg : DictConfig) -> None:
                 n_leg   = 12   # 6 per leg
                 n_waist = 3
                 n_arm   = 14   # 7 per arm
+                print("len(err)", {len(err)})
                 assert len(err) == n_leg + n_waist + n_arm
                 total_dof = n_leg + n_waist + n_arm   # 29
 

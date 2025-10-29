@@ -95,7 +95,7 @@ def pre_process_config(config) -> None:
     
     obs_slices = compute_obs_key_slices(config, obs_dim_dict, each_dict_obs_dims, auxiliary_obs_dims)
     config.env.config.obs.post_compute_config["obs_slices"] = obs_slices
-    # print(f"Step 2/999 (helpers): Computed obs_slices, {obs_slices}")
+    print(f"Step 2/999 (helpers): Computed obs_slices, {obs_slices}")
     # breakpoint()
 
                 
@@ -106,6 +106,7 @@ def pre_process_config(config) -> None:
                 motion_data = joblib.load(f)
             assert len(motion_data) == 1, 'current only support single motion tracking'
             the_motion_data = motion_data[next(iter(motion_data))]
+            the_motion_data['fps'] = int(the_motion_data['fps'])
             assert type(the_motion_data['fps']) == int, 'motion fps should be an integer'
             config.obs.motion_len = len(the_motion_data['dof']) / the_motion_data['fps']
             config.obs.motion_file = motion_file
