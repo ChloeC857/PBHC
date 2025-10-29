@@ -374,7 +374,6 @@ def main(cfg : DictConfig) -> None:
                 n_leg   = 12   # 6 per leg
                 n_waist = 3
                 n_arm   = 14   # 7 per arm
-                print("len(err)", {len(err)})
                 assert len(err) == n_leg + n_waist + n_arm
                 total_dof = n_leg + n_waist + n_arm   # 29
 
