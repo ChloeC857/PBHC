@@ -74,7 +74,6 @@ wandb/
 __pycache__
 # unitree_sdk2_python
 roboverse/data/motions
-*.pkl
 *.pt
 
 *.TXT
