@@ -157,7 +157,7 @@ robot:
     fix_base_link: false
     default_dof_drive_mode: 3
     robot_type: g1_29dof_rev_1_0
-    urdf_file: g1/29dof_official.urdf
+    urdf_file: g1/g1_29dof_rev_1_0.urdf
     usd_file: g1/${robot.asset.robot_type}.usd
     xml_file: g1/${robot.asset.robot_type}.xml
     asset_root: description/robots

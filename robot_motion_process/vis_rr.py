@@ -9,7 +9,7 @@ import math
 class RerunURDF():
     def __init__(self, robot_type):
         self.name = robot_type
-        self.robot = pin.RobotWrapper.BuildFromURDF('description/robots/g1/29dof_official.urdf', 'description/robots/g1', pin.JointModelFreeFlyer())
+        self.robot = pin.RobotWrapper.BuildFromURDF('description/robots/g1/g1_29dof_rev_1_0.urdf', 'description/robots/g1', pin.JointModelFreeFlyer())
         self.Tpose = np.array([0,0,0.785,0,0,0,1,
                                 -0.15,0,0,0.3,-0.15,0,
                                 -0.15,0,0,0.3,-0.15,0,

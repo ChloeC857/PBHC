@@ -177,7 +177,7 @@ robot:
     usd_file: "g1/${robot.asset.robot_type}.usd"
     xml_file: "g1/${robot.asset.robot_type}.xml"
     # xml_file: "g1/${robot.asset.robot_type}_fitmotionONLY.xml"
-    robot_type: g1_23dof_lock_wrist
+    robot_type: g1_29dof_rev_1_0
     self_collisions: 0 # 1 to disable, 0 to enable self collisions
     default_dof_drive_mode: 3
 
