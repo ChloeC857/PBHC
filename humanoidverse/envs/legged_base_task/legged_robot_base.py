@@ -690,6 +690,7 @@ class LeggedRobotBase(BaseTask):
             adds each terms to the episode sums and to the total reward
         """
         self.rew_buf[:] = 0.
+        print(len(self.reward_functions))
         for i in range(len(self.reward_functions)):
             print(f"Step {7+i}/999 (legged_robot_env.py): computing reward function ", self.reward_names[i])
             name = self.reward_names[i]

@@ -172,8 +172,8 @@ class Humanoid_Batch:
         pose = pose[..., :len(self._parents), :] # H1 fitted joints might have extra joints
         
         if convert_to_mat:
-            # pose_quat = axis_angle_to_quaternion(pose.clone()) # wxyz
-            pose_quat = pose.clone()
+            pose_quat = axis_angle_to_quaternion(pose.clone()) # wxyz
+            # pose_quat = pose.clone()
             pose_mat = quaternion_to_matrix(pose_quat)
         else:
             pose_mat = pose

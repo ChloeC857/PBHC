@@ -7,7 +7,7 @@ This repository simulates and trains the G1 humanoid robot for walking behavior 
 Before getting started, ensure that IssacGym is correctly installed and tested. After that, run the following command to set up the conda environment.
 
 ```bash
-conda env create -f environment.yml
+conda create -n humanoid-safe-fall python=3.8
 conda activate humanoid-safe-fall
 
 # install and test isaacgym

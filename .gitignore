@@ -7,7 +7,6 @@ isaac-gym-preview-4
 
 *.pdf
 *.csv
-*.pkl
 *.npz
 *.tar.gz
 
