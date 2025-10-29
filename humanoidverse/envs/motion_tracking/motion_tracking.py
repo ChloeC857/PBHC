@@ -96,7 +96,7 @@ def radial_velocity_potential(cur_vel, ref_vel, sigma_theta=0.75, alpha_norm=0.4
 
 class LeggedRobotMotionTracking(LeggedRobotBase):
     def __init__(self, config, device):
-        print("Step 3/999 (motion_tracking.py): Initializing LeggedRobotMotionTracking environment, where needs to update the calculation of rewards and resets")
+        # print("Step 3/999 (motion_tracking.py): Initializing LeggedRobotMotionTracking environment, where needs to update the calculation of rewards and resets")
         self.init_done = False
         self.debug_viz = True
         

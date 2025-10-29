@@ -28,13 +28,13 @@ import copy
 
 class LeggedRobotBase(BaseTask):
     def __init__(self, config, device):
-        print("Step 4/999 (legged_robot_base.py): Initializing LeggedRobotBase environment")
+        # print("Step 4/999 (legged_robot_base.py): Initializing LeggedRobotBase environment")
         self.init_done = False
         super().__init__(config, device)
         self._domain_rand_config()
         self._prepare_reward_function()
         self.history_handler = HistoryHandler(self.num_envs, config.obs.obs_auxiliary, config.obs.obs_dims, device)
-        print("Step 7/999 (legged_robot_base.py): For debugging")
+        # print("Step 7/999 (legged_robot_base.py): For debugging")
         self.is_evaluating = False
         self.init_done = True
 
@@ -214,7 +214,7 @@ class LeggedRobotBase(BaseTask):
         if self.config.use_vec_reward:
             # reward_fn_state.reward_functions = [reward_fn_state.reward_functions[0]]
             num_rew_fn = len(self.reward_functions)+1
-            print(f"CXY: number of reward function is {num_rew_fn}!!!!")
+            # print(f"CXY: number of reward function is {num_rew_fn}!!!!")
             self.rew_buf = torch.zeros(self.num_envs, num_rew_fn, dtype=torch.float, device=self.device, requires_grad=False)
 
     def set_is_evaluating(self):
@@ -690,9 +690,9 @@ class LeggedRobotBase(BaseTask):
             adds each terms to the episode sums and to the total reward
         """
         self.rew_buf[:] = 0.
-        print(len(self.reward_functions))
+        # print(len(self.reward_functions))
         for i in range(len(self.reward_functions)):
-            print(f"Step {7+i}/999 (legged_robot_env.py): computing reward function ", self.reward_names[i])
+            # print(f"Step {7+i}/999 (legged_robot_env.py): computing reward function ", self.reward_names[i])
             name = self.reward_names[i]
             rew = self.reward_functions[i]() * self.reward_scales[name]
             try:
@@ -1184,5 +1184,5 @@ class LeggedRobotBase(BaseTask):
     
     @property
     def num_rew_fn(self):
-        print("CXY: Updated num_rew_fn called !!!")
+        # print("CXY: Updated num_rew_fn called !!!")
         return len(self.reward_functions)+1 if self.config.use_vec_reward else 1

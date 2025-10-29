@@ -18,7 +18,7 @@ from termcolor import colored
 # Base class for RL tasks
 class BaseTask():
     def __init__(self, config, device):
-        print("Step 5/999: Initializing BaseTask")
+        # print("Step 5/999: Initializing BaseTask")
         self.config = config
         # optimization flags for pytorch JIT
         torch._C._jit_set_profiling_mode(False)
@@ -52,7 +52,7 @@ class BaseTask():
         self._load_assets()
         self._get_env_origins()
         self._create_envs()
-        print("Step 6/999 (base_task.py): Test Bug")
+        # print("Step 6/999 (base_task.py): Test Bug")
         self.dof_pos_limits, self.dof_vel_limits, self.torque_limits = self.simulator.get_dof_limits_properties()
         self._setup_robot_body_indices()
         # self._create_sim()
@@ -206,7 +206,7 @@ class BaseTask():
 
         self.penalised_contact_indices = torch.zeros(len(penalized_contact_names), dtype=torch.long, device=self.device, requires_grad=False)
         for i in range(len(penalized_contact_names)):
-            
+            print(f"CXY: penalized contact name: {penalized_contact_names[i]}")
             self.penalised_contact_indices[i] = self.simulator.find_rigid_body_indice(penalized_contact_names[i])
 
         self.termination_contact_indices = torch.zeros(len(termination_contact_names), dtype=torch.long, device=self.device, requires_grad=False)
