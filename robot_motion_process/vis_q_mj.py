@@ -34,7 +34,7 @@ def _make_stand_motion(T, height):
     """
     root_trans = np.tile(np.array([[0., 0., height]], dtype=np.float32), (T,1))
     root_rot   = np.tile(np.array([[0., 0., 0., 1.]], dtype=np.float32), (T,1))  # xyzw
-    dof        = np.zeros((T, 23), dtype=np.float32)  # 23 dofs for g1_23dof
+    dof        = np.zeros((T, 29), dtype=np.float32)  # 23 dofs for g1_23dof
     motion = {
         'fps': 30,
         'root_trans_offset': root_trans,
@@ -95,7 +95,9 @@ def get_terrain_init_params(terrain_type):
             'kp_waist': 40.0,
             'kd_waist': 4.0,
             'kp_arm': 15.0,
-            'kd_arm': 1.5
+            'kd_arm': 1.5,
+            'kp_trunk': 50.0,
+            'kd_trunk': 5.0
         }
     
     elif terrain_type == 'ramp':
@@ -128,7 +130,9 @@ def get_terrain_init_params(terrain_type):
             'kp_waist': 80.0,
             'kd_waist': 8.0,
             'kp_arm': 20.0,
-            'kd_arm': 2.0
+            'kd_arm': 2.0,
+            'kp_trunk': 50.0,
+            'kd_trunk': 5.0
         }
     
     elif terrain_type == 'stair':
@@ -151,7 +155,9 @@ def get_terrain_init_params(terrain_type):
             'kp_waist': 40.0,
             'kd_waist': 4.0,
             'kp_arm': 15.0,
-            'kd_arm': 1.5
+            'kd_arm': 1.5,
+            'kp_trunk': 50.0,
+            'kd_trunk': 5.0
         }
     
     else:
@@ -216,13 +222,13 @@ def get_xml_path_for_terrain(terrain:str):
         str: Path to corresponding XML file
     """
     if terrain == 'flat':
-        humanoid_xml = "description/g1/g1_23dof_lock_wrist_flat.xml"
+        humanoid_xml = "description/robots/g1/g1_23dof_lock_wrist_flat.xml"
     elif terrain == 'ramp':
-        humanoid_xml = "description/g1/g1_23dof_lock_wrist_ramp.xml"
+        humanoid_xml = "description/robots/g1/g1_23dof_lock_wrist_ramp.xml"
     elif terrain == 'stair':
-        humanoid_xml = "description/g1/g1_23dof_lock_wrist_stair.xml"
+        humanoid_xml = "description/robots/g1/g1_23dof_lock_wrist_stair.xml"
     else:
-        humanoid_xml = "description/g1/g1_23dof_lock_wrist_flat.xml"
+        humanoid_xml = "description/robots/g1/g1_29dof_rev_1_0.xml"
     return humanoid_xml
          
 @hydra.main(version_base=None)
@@ -316,6 +322,8 @@ def main(cfg : DictConfig) -> None:
         kd_waist = terrain_params['kd_waist']
         kp_arm = terrain_params['kp_arm']
         kd_arm = terrain_params['kd_arm']
+        kp_trunk = terrain_params['kp_trunk']
+        kd_trunk = terrain_params['kd_trunk']
         
         print(f"[INFO] PD Gains - Leg: kp={kp_leg}, kd={kd_leg} | Waist: kp={kp_waist}, kd={kd_waist} | Arm: kp={kp_arm}, kd={kd_arm}")
         
@@ -349,53 +357,64 @@ def main(cfg : DictConfig) -> None:
                         viewer.sync()
                         continue
 
-                # Compute joint errors for PD control
+                # Compute joint errors for PD control (29-DoF humanoid, 87 hinge joints)
                 qpos = mj_data.qpos.copy()
                 qvel = mj_data.qvel.copy()
-                err = qpos[7:] - qpos_ref[7:]  # Joint position error (23 DOF)
-                derr = qvel[6:]  # Joint velocity (6 root DOF + 23 joints)
-                
-                # Apply PD control law: tau = -kp * err - kd * derr
-                # 23 DOF ordering: 12 leg joints + 3 waist joints + 8 arm joints (no wrists)
+
+                # Skip 7 root DoFs (freejoint: 3 pos + 4 quat)
+                joint_pos = qpos[7:]
+                joint_vel = qvel[6:]
+
+                err = joint_pos - qpos_ref[7:]
+                derr = joint_vel
+
+                # === Group DOFs by region (count in multiples of 3) ===
+                # Legs: 4 (L) + 4 (R) = 8 segments × 3 = 24 DoF
+                leg_dof = 8 * 3
+                # Trunk: Torso, Spine, Chest, Neck, Head = 5 × 3 = 15 DoF
+                trunk_dof = 5 * 3
+                # Arms: (L_Thorax..L_Hand) + (R_Thorax..R_Hand) = 10 × 3 = 30 DoF
+                arm_dof = 10 * 3
+                total_dof = leg_dof + trunk_dof + arm_dof   # 69
+
+                assert err.shape[0] == total_dof, f"Mismatch: expected {total_dof}, got {err.shape[0]}"
+
+                # === PD gains by group ===
                 kp_gains = np.concatenate([
-                    np.full(12, kp_leg),   # Leg joints (left/right, 6 each)
-                    np.full(3, kp_waist),  # Waist joints (yaw, roll, pitch)
-                    np.full(8, kp_arm)     # Arm joints (left/right, 4 each, locked wrists)
+                    np.full(leg_dof, kp_leg),
+                    np.full(trunk_dof, kp_trunk),
+                    np.full(arm_dof, kp_arm)
                 ])
                 kd_gains = np.concatenate([
-                    np.full(12, kd_leg),
-                    np.full(3, kd_waist),
-                    np.full(8, kd_arm)
+                    np.full(leg_dof, kd_leg),
+                    np.full(trunk_dof, kd_trunk),
+                    np.full(arm_dof, kd_arm)
                 ])
-                
-                # Compute PD control torques
+
+                # === PD control law ===
                 ctrl = -kp_gains * err - kd_gains * derr
-                
-                # Pitch stabilization
+
+                # === Optional: pitch stabilization on Torso_y ===
                 root_quat = qpos[3:7]  # xyzw
                 root_rot = sRot.from_quat([root_quat[1], root_quat[2], root_quat[3], root_quat[0]])
                 euler = root_rot.as_euler('xyz', degrees=False)
                 curr_pitch = euler[1]
-                
-                # Compute pitch error relative to terrain slope
                 pitch_error = curr_pitch - ref_pitch
-                
-                # Add corrective torque to waist pitch joint if tilted beyond threshold
-                if abs(pitch_error) > 0.05:  # ~3 degrees deviation
-                    waist_pitch_idx = 14
-                    stabilization_torque = -50.0 * pitch_error  # Proportional correction
-                    ctrl[waist_pitch_idx] += stabilization_torque
-                    ctrl[waist_pitch_idx] = np.clip(ctrl[waist_pitch_idx], -30, 30)
-                
-                # Clip control torques to joint limits (23 DOF)
-                ctrl_limits = np.array([
-                    60, 100, 60, 100, 40, 40,
-                    60, 100, 60, 100, 40, 40,
-                    50, 40, 40,
-                    15, 15, 15, 15,
-                    15, 15, 15, 15
+
+                # Waist pitch = Torso_y joint index
+                if abs(pitch_error) > 0.05:
+                    torso_y_idx = 7 + (leg_dof // 2) + 1   # approximate middle of torso group
+                    stabilization_torque = -50.0 * pitch_error
+                    ctrl[torso_y_idx] += np.clip(stabilization_torque, -30, 30)
+
+                # === Torque limits (scaled for 29-DoF) ===
+                ctrl_limits = np.concatenate([
+                    np.full(leg_dof, 80.0),
+                    np.full(trunk_dof, 50.0),
+                    np.full(arm_dof, 20.0)
                 ])
                 ctrl = np.clip(ctrl, -ctrl_limits, ctrl_limits)
+
                 
                 # Apply control torques and step simulation
                 mj_data.ctrl[:] = ctrl
