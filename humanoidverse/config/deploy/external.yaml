@@ -163,9 +163,9 @@ robot:
     asset_root: description/robots
     self_collisions: 0
     filter_ints: null
-  actions_dim: 23
+  actions_dim: 29
   lower_body_actions_dim: 15
-  upper_body_actions_dim: 8
+  upper_body_actions_dim: 14
   policy_obs_dim: -1
   critic_obs_dim: -1
   num_feet: 2
@@ -199,6 +199,12 @@ robot:
   - right_shoulder_roll_joint
   - right_shoulder_yaw_joint
   - right_elbow_joint
+  - left_wrist_roll_joint
+  - left_wrist_pitch_joint
+  - left_wrist_yaw_joint
+  - right_wrist_roll_joint
+  - right_wrist_pitch_joint
+  - right_wrist_yaw_joint
   upper_dof_names:
   - left_shoulder_pitch_joint
   - left_shoulder_roll_joint
@@ -208,16 +214,28 @@ robot:
   - right_shoulder_roll_joint
   - right_shoulder_yaw_joint
   - right_elbow_joint
+  - left_wrist_roll_joint
+  - left_wrist_pitch_joint
+  - left_wrist_yaw_joint
+  - right_wrist_roll_joint
+  - right_wrist_pitch_joint
+  - right_wrist_yaw_joint
   upper_left_arm_dof_names:
   - left_shoulder_pitch_joint
   - left_shoulder_roll_joint
   - left_shoulder_yaw_joint
   - left_elbow_joint
+  - left_wrist_roll_joint
+  - left_wrist_pitch_joint
+  - left_wrist_yaw_joint
   upper_right_arm_dof_names:
   - right_shoulder_pitch_joint
   - right_shoulder_roll_joint
   - right_shoulder_yaw_joint
   - right_elbow_joint
+  - right_wrist_roll_joint
+  - right_wrist_pitch_joint
+  - right_wrist_yaw_joint
   lower_dof_names:
   - left_hip_pitch_joint
   - left_hip_roll_joint
@@ -262,6 +280,12 @@ robot:
   - -2.2515
   - -2.618
   - -1.0472
+  - -1.97222
+  - -1.61443
+  - -1.61443
+  - -1.97222
+  - -1.61443
+  - -1.61443
   dof_pos_upper_limit_list:
   - 2.8798
   - 2.9671
@@ -286,6 +310,12 @@ robot:
   - 1.5882
   - 2.618
   - 2.0944
+  - 1.97222
+  - 1.61443
+  - 1.61443
+  - 1.97222
+  - 1.61443
+  - 1.61443
   dof_vel_limit_list:
   - 32.0
   - 20.0
@@ -310,6 +340,12 @@ robot:
   - 37.0
   - 37.0
   - 37.0
+  - 10.0
+  - 5.0
+  - 5.0
+  - 10.0
+  - 5.0
+  - 5.0
   dof_effort_limit_list:
   - 88.0
   - 139.0
@@ -334,6 +370,12 @@ robot:
   - 25.0
   - 25.0
   - 25.0
+  - 25.0
+  - 5.0
+  - 5.0
+  - 25.0
+  - 5.0
+  - 5.0
   dof_armature_list:
   - 0.03
   - 0.03
@@ -407,6 +449,12 @@ robot:
   - right_shoulder_roll_link
   - right_shoulder_yaw_link
   - right_elbow_link
+  - left_wrist_roll_joint
+  - left_wrist_pitch_joint
+  - left_wrist_yaw_joint
+  - right_wrist_roll_joint
+  - right_wrist_pitch_joint
+  - right_wrist_yaw_joint
   terminate_after_contacts_on:
   - pelvis
   - shoulder
@@ -423,8 +471,8 @@ robot:
     motion_lib_type: WJX
     asset:
       assetRoot: description/robots/g1/
-      assetFileName: g1_23dof_lock_wrist_fitmotionONLY.xml
-    humanoid_type: g1_23dof_lock_wrist
+      assetFileName: g1_29dof_fitmotionONLY.xml
+    humanoid_type: g1_29dof_rev_1_0
     bias_offset: false
     has_self_collision: true
     has_mesh: false
@@ -471,6 +519,12 @@ robot:
     - right_shoulder_roll_link
     - right_shoulder_yaw_link
     - right_elbow_link
+    - left_wrist_roll_link
+    - left_wrist_pitch_link
+    - left_wrist_yaw_link
+    - right_wrist_roll_link
+    - right_wrist_pitch_link
+    - right_wrist_yaw_link
     limb_weight_group:
     - - left_hip_pitch_link
       - left_hip_roll_link
@@ -492,10 +546,16 @@ robot:
       - left_shoulder_roll_link
       - left_shoulder_yaw_link
       - left_elbow_link
+      - left_wrist_roll_link
+      - left_wrist_pitch_link
+      - left_wrist_yaw_link
     - - right_shoulder_pitch_link
       - right_shoulder_roll_link
       - right_shoulder_yaw_link
       - right_elbow_link
+      - right_wrist_roll_link
+      - right_wrist_pitch_link
+      - right_wrist_yaw_link
     dof_names:
     - left_hip_pitch_link
     - left_hip_roll_link
@@ -520,32 +580,16 @@ robot:
     - right_shoulder_roll_link
     - right_shoulder_yaw_link
     - right_elbow_link
+    - left_wrist_roll_link
+    - left_wrist_pitch_link
+    - left_wrist_yaw_link
+    - right_wrist_roll_link
+    - right_wrist_pitch_link
+    - right_wrist_yaw_link
     right_foot_name: r_foot_roll
     left_foot_name: l_foot_roll
-    nums_extend_bodies: 3
+    nums_extend_bodies: 1
     extend_config:
-    - joint_name: left_hand_link
-      parent_name: left_elbow_link
-      pos:
-      - 0.25
-      - 0.0
-      - 0.0
-      rot:
-      - 1.0
-      - 0.0
-      - 0.0
-      - 0.0
-    - joint_name: right_hand_link
-      parent_name: right_elbow_link
-      pos:
-      - 0.25
-      - 0.0
-      - 0.0
-      rot:
-      - 1.0
-      - 0.0
-      - 0.0
-      - 0.0
     - joint_name: head_link
       parent_name: torso_link
       pos:
@@ -558,8 +602,6 @@ robot:
       - 0.0
       - 0.0
     motion_tracking_link:
-    - left_hand_link
-    - right_hand_link
     - head_link
     lower_body_link:
     - pelvis
@@ -590,6 +632,12 @@ robot:
     - left_hand_link
     - right_hand_link
     - head_link
+    - left_wrist_roll_link
+    - left_wrist_pitch_link
+    - left_wrist_yaw_link
+    - right_wrist_roll_link
+    - right_wrist_pitch_link
+    - right_wrist_yaw_link
     pelvis_link: pelvis
     base_link: torso_link
     hips_link:

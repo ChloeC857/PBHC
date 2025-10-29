@@ -106,6 +106,7 @@ class MHPPO(BaseAlgo):
 
     def _setup_models_and_optimizer(self):
         self.config.module_dict.critic['output_dim'][-1] = self.num_rew_fn
+        print("CXY: test action number in mp_ppo,py: ", self.num_act)
         actor_kwargs = {
             "obs_dim_dict": self.algo_obs_dim_dict,
             "module_config_dict": self.config.module_dict.actor,

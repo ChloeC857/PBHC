@@ -81,9 +81,9 @@ robot:
 
 
   # terminate_after_contacts_on : ["head_link"]
-  terminate_after_contacts_on : ["head", "hip", "pelvis"]
+  terminate_after_contacts_on : ["hip", "pelvis"]
   # penalize_contacts_on: ["pelvis", "shoulder", "hip", "torso", "waist", "elbow"]
-  penalize_contacts_on: ["shoulder", "torso", "head", "hip", "pelvis"]
+  penalize_contacts_on: ["shoulder", "torso", "hip", "pelvis"]
   init_state:
     pos: [0.0, 0.0, 0.8] # x,y,z [m]
     rot: [0.0, 0.0, 0.0, 1.0] # x,y,z,w [quat] 
@@ -116,9 +116,6 @@ robot:
       right_shoulder_roll_joint: -0.2
       right_shoulder_yaw_joint: 0.
       right_elbow_joint: 0.9
-      left_wrist_roll_joint: 0.
-      left_wrist_pitch_joint: 0.
-      left_wrist_yaw_joint: 0.
       right_wrist_roll_joint: 0.
       right_wrist_pitch_joint: 0.
       right_wrist_yaw_joint: 0.

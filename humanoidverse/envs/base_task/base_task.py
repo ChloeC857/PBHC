@@ -43,6 +43,7 @@ class BaseTask():
         self.dim_obs = self.config.robot.policy_obs_dim
         self.dim_critic_obs = self.config.robot.critic_obs_dim
         self.dim_actions = self.config.robot.actions_dim
+        print(f"CXY test action dim in base_task.py: {self.dim_actions}. ")
 
         terrain_mesh_type = self.config.terrain.mesh_type
         self.simulator.setup_terrain(terrain_mesh_type)
@@ -147,7 +148,12 @@ class BaseTask():
 
         self.simulator.load_assets()
         self.num_dof, self.num_bodies, self.dof_names, self.body_names = self.simulator.num_dof, self.simulator.num_bodies, self.simulator.dof_names, self.simulator.body_names
-        
+        print("----------- base_task.py -------------")
+        print(f"num_dof: {self.num_dof}.")
+        print(f"num_bodies: {self.num_bodies}.")
+        print(f"dof_names: {self.dof_names}.")
+        print(f"body_names: {self.body_names}.")
+        print("--------------------------------------")
         # check dimensions
         assert self.num_dof == self.dim_actions, "Number of DOFs must be equal to number of actions"
 
