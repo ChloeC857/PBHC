@@ -137,6 +137,9 @@ robot:
       shoulder_roll: 100
       shoulder_yaw: 50
       elbow: 50
+      wrist_roll: 20
+      wrist_pitch: 20
+      wrist_yaw: 20
 
 
     damping: # [N*m/rad]  # [N*m*s/rad]
@@ -153,6 +156,9 @@ robot:
       shoulder_roll: 2.0
       shoulder_yaw: 2.0
       elbow: 2.0
+      wrist_roll: 1.0
+      wrist_pitch: 1.0
+      wrist_yaw: 1.0
 
     # action scale: target angle = actionScale * action + defaultAngle
     action_scale: 0.25
