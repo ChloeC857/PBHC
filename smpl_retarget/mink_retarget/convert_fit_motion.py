@@ -48,17 +48,29 @@ def foot_detect(positions, thres=0.002):
 def count_pose_aa(motion):
     dof = motion['dof']
     root_qua = motion['root_rot']
-    dof_new = np.concatenate((dof[:, :19], dof[:, 22:26]), axis=1)
+    # dof_new = np.concatenate((dof[:, :19], dof[:, 22:26]), axis=1)
     root_aa = sRot.from_quat(root_qua).as_rotvec()
 
     dof_axis = np.load('../description/robots/g1/dof_axis.npy', allow_pickle=True)
     dof_axis = dof_axis.astype(np.float32)
+    toe_indices = [9, 10, 11, 18, 19, 20]
 
+    mask = np.ones(dof.shape[1], dtype=bool)
+    mask[toe_indices] = False
+    dof_filtered = dof[:, mask]
+    # pose_aa = np.concatenate(
+    #     (np.expand_dims(root_aa, axis=1), dof_axis * np.expand_dims(dof_new, axis=2), np.zeros((dof_new.shape[0], 3, 3))),
+    #     axis=1).astype(np.float32)
     pose_aa = np.concatenate(
-        (np.expand_dims(root_aa, axis=1), dof_axis * np.expand_dims(dof_new, axis=2), np.zeros((dof_new.shape[0], 3, 3))),
-        axis=1).astype(np.float32)
+        (np.expand_dims(root_aa, axis=1),
+         dof_axis * np.expand_dims(dof_filtered, axis=2)),
+        axis=1
+    ).astype(np.float32)
     
-    return pose_aa,dof_new
+    print("pose_aa shape: ", pose_aa.shape)
+    
+    return pose_aa,dof_filtered
+    # return pose_aa,dof_new
 
 def EMA_smooth(trans, alpha=0.3):
     ema = np.zeros_like(trans)
@@ -121,6 +133,11 @@ def main(
         print("skeleton_tree_parents: ", skeleton_tree.parent_indices)
     else:
         skeleton_tree = None
+        
+    print("Mink output dof shape:", dof.shape)
+    for i, name in enumerate(skeleton_tree.node_names):
+        print(i, name)
+
     
     # mkdir
     append_name = robot_type
