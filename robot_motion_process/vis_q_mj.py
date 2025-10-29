@@ -369,51 +369,53 @@ def main(cfg : DictConfig) -> None:
                 derr = joint_vel
 
                 # === Group DOFs by region (count in multiples of 3) ===
-                # Legs: 4 (L) + 4 (R) = 8 segments × 3 = 24 DoF
-                leg_dof = 8 * 3
-                # Trunk: Torso, Spine, Chest, Neck, Head = 5 × 3 = 15 DoF
-                trunk_dof = 5 * 3
-                # Arms: (L_Thorax..L_Hand) + (R_Thorax..R_Hand) = 10 × 3 = 30 DoF
-                arm_dof = 10 * 3
-                total_dof = leg_dof + trunk_dof + arm_dof   # 69
+                # Group counts from XML
+                n_leg   = 12   # 6 per leg
+                n_waist = 3
+                n_arm   = 14   # 7 per arm
+                assert len(err) == n_leg + n_waist + n_arm
+                total_dof = n_leg + n_waist + n_arm   # 29
 
                 assert err.shape[0] == total_dof, f"Mismatch: expected {total_dof}, got {err.shape[0]}"
 
-                # === PD gains by group ===
+                # === PD gains ===
                 kp_gains = np.concatenate([
-                    np.full(leg_dof, kp_leg),
-                    np.full(trunk_dof, kp_trunk),
-                    np.full(arm_dof, kp_arm)
+                    np.full(n_leg,   kp_leg),
+                    np.full(n_waist, kp_waist),
+                    np.full(n_arm,   kp_arm)
                 ])
                 kd_gains = np.concatenate([
-                    np.full(leg_dof, kd_leg),
-                    np.full(trunk_dof, kd_trunk),
-                    np.full(arm_dof, kd_arm)
+                    np.full(n_leg,   kd_leg),
+                    np.full(n_waist, kd_waist),
+                    np.full(n_arm,   kd_arm)
                 ])
 
-                # === PD control law ===
+                # === PD torque ===
                 ctrl = -kp_gains * err - kd_gains * derr
 
-                # === Optional: pitch stabilization on Torso_y ===
-                root_quat = qpos[3:7]  # xyzw
+                # === Optional pitch stabilization ===
+                root_quat = qpos[3:7]  # [x y z w] in MuJoCo
                 root_rot = sRot.from_quat([root_quat[1], root_quat[2], root_quat[3], root_quat[0]])
-                euler = root_rot.as_euler('xyz', degrees=False)
-                curr_pitch = euler[1]
+                curr_pitch = root_rot.as_euler('xyz')[1]
                 pitch_error = curr_pitch - ref_pitch
 
-                # Waist pitch = Torso_y joint index
+                # waist_pitch_joint is 15th joint in actuator order
                 if abs(pitch_error) > 0.05:
-                    torso_y_idx = 7 + (leg_dof // 2) + 1   # approximate middle of torso group
-                    stabilization_torque = -50.0 * pitch_error
-                    ctrl[torso_y_idx] += np.clip(stabilization_torque, -30, 30)
+                    waist_pitch_idx = 12 + 2  # waist_yaw(12), waist_roll(13), waist_pitch(14) → index 14-7=7?? let's count properly
+                    waist_pitch_idx = n_leg + 2  # inside waist group (3rd in that group)
+                    stabilization_torque = -60.0 * pitch_error
+                    ctrl[waist_pitch_idx] += np.clip(stabilization_torque, -40, 40)
 
-                # === Torque limits (scaled for 29-DoF) ===
+                # === Torque limits by region ===
                 ctrl_limits = np.concatenate([
-                    np.full(leg_dof, 80.0),
-                    np.full(trunk_dof, 50.0),
-                    np.full(arm_dof, 20.0)
+                    np.full(n_leg,   100.0),
+                    np.full(n_waist, 80.0),
+                    np.full(n_arm,   40.0)
                 ])
                 ctrl = np.clip(ctrl, -ctrl_limits, ctrl_limits)
+
+                # Send torques
+                mj_data.ctrl[:] = ctrl
 
                 
                 # Apply control torques and step simulation
