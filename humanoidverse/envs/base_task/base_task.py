@@ -43,18 +43,11 @@ class BaseTask():
         self.dim_obs = self.config.robot.policy_obs_dim
         self.dim_critic_obs = self.config.robot.critic_obs_dim
         self.dim_actions = self.config.robot.actions_dim
-        print("----------- base_task.py -------------")
-        print(f"num_envs: {self.num_envs}.")
-        print(f"dim_obs: {self.dim_obs}.")
-        print(f"dim_critic_obs: {self.dim_critic_obs}.")
-        print(f"dim_actions: {self.dim_actions}.")
-        print("--------------------------------------")
         terrain_mesh_type = self.config.terrain.mesh_type
         self.simulator.setup_terrain(terrain_mesh_type)
         self.setup_visualize_entities()
 
         # create envs, sim and viewer
-        print("CXY: create envs, sim and viewer")
         self._load_assets()
         self._get_env_origins()
         self._create_envs()
