@@ -80,7 +80,7 @@ robot:
 
 
   # terminate_after_contacts_on : ["head_link"]
-  terminate_after_contacts_on : []
+  terminate_after_contacts_on : ["head_link"]
   # penalize_contacts_on: ["pelvis", "shoulder", "hip", "torso", "waist", "elbow"]
   penalize_contacts_on: ["shoulder", "torso"]
   init_state:

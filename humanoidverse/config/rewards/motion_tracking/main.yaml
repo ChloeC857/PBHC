@@ -42,10 +42,7 @@ rewards:
       termination: 0.0
       # penalty for collision with environment or ground
       # collision: -30.0
-      collision: 0.0
-      # collision_parts: 0.0
-      # collision_head: -10.0
-      # collision_back: 0.0
+      collision: -30.0  # ["shoulder", "torso"]
       
 
   teleop_body_pos_lowerbody_weight : 1.0
