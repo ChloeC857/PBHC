@@ -21,6 +21,7 @@ robot:
   # head_name: "head_link"
   foot_name: "ankle_roll_link"
   knee_name: "knee_link"
+  head_name: "head"
   has_torso: True
   torso_name: "torso_link"
   has_upper_body_dof: True
@@ -71,7 +72,7 @@ robot:
                             0.03, 0.03, 0.03, 0.03,
                             0.03, 0.03, 0.03, 0.03]
 
-  body_names: ['pelvis', 'head_link', 
+  body_names: ['pelvis', 
                 'left_hip_pitch_link', 'left_hip_roll_link', 'left_hip_yaw_link', 'left_knee_link', 'left_ankle_pitch_link', 'left_ankle_roll_link',
                 'right_hip_pitch_link', 'right_hip_roll_link', 'right_hip_yaw_link', 'right_knee_link', 'right_ankle_pitch_link', 'right_ankle_roll_link',
                 'waist_yaw_link', 'waist_roll_link', 'torso_link',
@@ -80,9 +81,9 @@ robot:
 
 
   # terminate_after_contacts_on : ["head_link"]
-  terminate_after_contacts_on : ["head"]
+  terminate_after_contacts_on : ["head", "hip", "pelvis"]
   # penalize_contacts_on: ["pelvis", "shoulder", "hip", "torso", "waist", "elbow"]
-  penalize_contacts_on: ["shoulder", "torso", "head"]
+  penalize_contacts_on: ["shoulder", "torso", "head", "hip", "pelvis"]
   init_state:
     pos: [0.0, 0.0, 0.8] # x,y,z [m]
     rot: [0.0, 0.0, 0.0, 1.0] # x,y,z,w [quat] 
@@ -210,7 +211,7 @@ robot:
     real_weight_porpotion_capsules: True
     real_weight_porpotion_boxes: True
 
-    body_names: ['pelvis', 'head_link',
+    body_names: ['pelvis',
                  'left_hip_pitch_link', 'left_hip_roll_link', 'left_hip_yaw_link', 'left_knee_link', 'left_ankle_pitch_link', 'left_ankle_roll_link', 
                  'right_hip_pitch_link', 'right_hip_roll_link', 'right_hip_yaw_link', 'right_knee_link', 'right_ankle_pitch_link', 'right_ankle_roll_link', 
                  'waist_yaw_link', 'waist_roll_link', 'torso_link',

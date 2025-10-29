@@ -174,6 +174,7 @@ class BaseTask():
     def _setup_robot_body_indices(self):
         feet_names = [s for s in self.body_names if self.config.robot.foot_name in s]
         knee_names = [s for s in self.body_names if self.config.robot.knee_name in s]
+        head_names = [s for s in self.body_names if self.config.robot.head_name in s]
  
         # TODO: add head contact names
         # if hasattr(self.config.robot, 'head_name'):
