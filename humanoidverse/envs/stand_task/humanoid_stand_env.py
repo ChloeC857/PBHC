@@ -8,7 +8,7 @@ class HumanoidStandEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 60}
 
     def __init__(self,
-                 xml_path="description/robots/g1/g1_23dof_lock_wrist.xml",
+                 xml_path="description/robots/g1/g1_29dof_rev_1_0.xml",
                  sim_dt=1/240,           # 物理步长
                  control_dt=1/30,        # 控制周期（每 N 个物理步执行一次控制）
                  target_height=0.85,
