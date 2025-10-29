@@ -581,6 +581,11 @@ class IsaacSim(BaseSimulator):
             logger.warning("The order of the joint_names in the robot_config does not match the order of the joint_ids in IsaacSim.")
         
         # assert if  aligns with config
+        print("--------------isaacsim.py---------------------")
+        print("Number of DOFs: ", self.num_dof)
+        print("length of dof names in config: ", len(self.robot_config.dof_names))
+        print("dof names: ", self.dof_names)
+        print("-------------------------------------")
         assert self.num_dof == len(self.robot_config.dof_names), "Number of DOFs must be equal to number of actions"
         assert self.num_bodies == len(self.robot_config.body_names), "Number of bodies must be equal to number of body names"
         # import ipdb; ipdb.set_trace()

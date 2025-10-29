@@ -156,6 +156,14 @@ class IsaacGym(BaseSimulator):
         self.num_dof, self.num_bodies, self.dof_names, self.body_names = self._setup_robot_props_when_env_created()
         
         # assert if  aligns with config
+        print("--------------isaacgym.py---------------------")
+        print("Number of DOFs: ", self.num_dof)
+        print("length of dof names in config: ", len(self.robot_config.dof_names))
+        print("num_bodies: ", self.num_bodies)
+        print("length of body names in config: ", len(self.robot_config.body_names))
+        print("dof names: ", self.dof_names)
+        print("body names: ", self.body_names)
+        print("-------------------------------------")
         assert self.num_dof == len(self.robot_config.dof_names), "Number of DOFs must be equal to number of actions"
         assert self.num_bodies == len(self.robot_config.body_names), "Number of bodies must be equal to number of body names"
         assert self.dof_names == self.robot_config.dof_names, "DOF names must match the config"
