@@ -4,7 +4,7 @@ algo:
   _target_: humanoidverse.agents.mh_ppo.mh_ppo.MHPPO
   _recursive_: False
   config:
-    num_learning_epochs: 5
+    num_learning_epochs: 1
     num_mini_batches: 4
     clip_param: 0.2
     gamma: 0.99
@@ -23,15 +23,15 @@ algo:
     schedule: "adaptive"
     desired_kl: 0.01
 
-    num_steps_per_env: 24
-    save_interval: 1000
-    logging_interval: 25
+    num_steps_per_env: 3
+    save_interval: 1
+    logging_interval: 1
 
     load_optimizer: True
 
     init_noise_std: 0.8
 
-    num_learning_iterations: 1000000
+    num_learning_iterations: 1
     init_at_random_ep_len: True
     eval_callbacks: null
 
