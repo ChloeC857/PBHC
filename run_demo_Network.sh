@@ -4,7 +4,7 @@ echo "Activated conda env: $CONDA_DEFAULT_ENV"
 
 python humanoidverse/train_agent.py \
 +simulator=isaacgym +exp=demo_exp +terrain=terrain_locomotion_plane \
-project_name=MotionTracking num_envs=128 \
+project_name=MotionTracking num_envs=8 \
 +obs=motion_tracking/main \
 +robot=g1/g1_23dof_lock_wrist \
 +domain_rand=main \

@@ -23,7 +23,7 @@ algo:
     schedule: "adaptive"
     desired_kl: 0.01
 
-    num_steps_per_env: 24
+    num_steps_per_env: 3
     save_interval: 1
     logging_interval: 1
 
