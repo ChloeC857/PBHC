@@ -52,7 +52,7 @@ def count_pose_aa(motion):
     dof_new = dof[:, :28]
     root_aa = sRot.from_quat(root_qua).as_rotvec()
 
-    dof_axis = np.load('../description/robots/g1/dof_axis.npy', allow_pickle=True)
+    dof_axis = np.load('../description/robots/g1/dof_axis_29dof.npy', allow_pickle=True)
     dof_axis = dof_axis.astype(np.float32)
 
     pose_aa = np.concatenate(

@@ -246,14 +246,14 @@ robot:
 
     nums_extend_bodies: 1
     extend_config:
-      # - joint_name: "left_hand_link"
-      #   parent_name: "left_elbow_link"
-      #   pos: [0.25, 0.0, 0.0]
-      #   rot: [1.0, 0.0, 0.0, 0.0] # w x y z
-      # - joint_name: "right_hand_link"
-      #   parent_name: "right_elbow_link"
-      #   pos: [0.25, 0.0, 0.0]
-      #   rot: [1.0, 0.0, 0.0, 0.0] # w x y z
+      - joint_name: "left_hand_link"
+        parent_name: "left_wrist_yaw_link"
+        pos: [0.25, 0.0, 0.0]
+        rot: [1.0, 0.0, 0.0, 0.0] # w x y z
+      - joint_name: "right_hand_link"
+        parent_name: "right_wrist_yaw_link"
+        pos: [0.25, 0.0, 0.0]
+        rot: [1.0, 0.0, 0.0, 0.0] # w x y z
       - joint_name: "head_link"
         parent_name: "torso_link"
         pos: [0.0, 0.0, 0.42]
@@ -261,8 +261,8 @@ robot:
 
 
     motion_tracking_link:
-      # - "left_hand_link"
-      # - "right_hand_link"
+      - "left_hand_link"
+      - "right_hand_link"
       - "head_link"
 
     lower_body_link:
@@ -324,15 +324,11 @@ robot:
       - ["right_ankle_roll_link", "R_Ankle"]
       - ["left_shoulder_roll_link", "L_Shoulder"]
       - ["left_elbow_link", "L_Elbow"]
-      - ["left_wrist_roll_link", "L_Wrist_Roll"]
-      - ["left_wrist_pitch_link", "L_Wrist_Pitch"]
-      - ["left_wrist_yaw_link", "L_Wrist_Yaw"]
+      - ["left_wrist_yaw_link", "L_Wrist"]
       - ["left_hand_link", "L_Hand"]
       - ["right_shoulder_roll_link", "R_Shoulder"]
       - ["right_elbow_link", "R_Elbow"]
-      - ["right_wrist_roll_link", "R_Wrist_Roll"]
-      - ["right_wrist_pitch_link", "R_Wrist_Pitch"]
-      - ["right_wrist_yaw_link", "R_Wrist_Yaw"]
+      - ["right_wrist_yaw_link", "R_Wrist"]
       - ["right_hand_link", "R_Hand"]
       - ["head_link", "Head"]
 
@@ -343,12 +339,8 @@ robot:
       - R_Shoulder: "[0, 0, np.pi/2]"
       - L_Elbow: "[0, -np.pi/2, 0]"
       - R_Elbow: "[0, np.pi/2, 0]"
-      - L_Wrist_Roll: "[0, 0, -np.pi/2]"
-      - R_Wrist_Roll: "[0, 0, np.pi/2]"
-      - L_Wrist_Pitch: "[0, -np.pi/2, 0]"
-      - R_Wrist_Pitch: "[0, np.pi/2, 0]"
-      - L_Wrist_Yaw: "[0, 0, -np.pi/2]"
-      - R_Wrist_Yaw: "[0, 0, np.pi/2]"
+      - L_Wrist: "[0, 0, -np.pi/2]"
+      - R_Wrist: "[0, 0, np.pi/2]"
 
     visualization:
       customize_color : True
