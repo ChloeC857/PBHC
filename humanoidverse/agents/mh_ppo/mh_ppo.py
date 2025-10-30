@@ -677,13 +677,14 @@ class MHPPO(BaseAlgo):
                     except Exception:
                         pass
 
-                fb_string += f"{'--- Forward / Backward Pass ---':^{pad*2}}\n"
+                fb_string += f" \033[1m Forward / Backward Pass \033[0m "
+            
                 if actor_sample is not None:
                     fb_string += f"{'Actor mean (first 5):':>{pad}} {actor_sample}\n"
                 if critic_sample is not None:
                     fb_string += f"{'Critic value (first 5):':>{pad}} {critic_sample}\n"
 
-                for key in ["Value", "Surrogate", "Entropy", "L2C2_Value", "L2C2_Policy"]:
+                for key in ["Value", "Surrogate", "Entropy"]:
                     if key in log_dict['loss_dict']:
                         fb_string += f"{f'{key} Loss:':>{pad}} {log_dict['loss_dict'][key]:>10.4f}\n"
 
