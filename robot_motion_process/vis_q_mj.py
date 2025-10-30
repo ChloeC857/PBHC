@@ -222,13 +222,13 @@ def get_xml_path_for_terrain(terrain:str):
         str: Path to corresponding XML file
     """
     if terrain == 'flat':
-        humanoid_xml = "description/robots/g1/g1_29dof_rev_1_0.xml"
+        humanoid_xml = "description/robots/g1/g1_23dof_lock_wrist_flat.xml"
     elif terrain == 'ramp':
         humanoid_xml = "description/robots/g1/g1_23dof_lock_wrist_ramp.xml"
     elif terrain == 'stair':
         humanoid_xml = "description/robots/g1/g1_23dof_lock_wrist_stair.xml"
     else:
-        humanoid_xml = "description/robots/g1/g1_29dof_rev_1_0.xml"
+        humanoid_xml = "description/robots/g1/g1_23dof_lock_wrist_flat.xml"
     return humanoid_xml
          
 @hydra.main(version_base=None)
