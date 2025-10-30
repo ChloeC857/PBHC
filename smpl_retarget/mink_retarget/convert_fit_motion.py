@@ -45,21 +45,46 @@ def foot_detect(positions, thres=0.002):
     feet_r = np.max(feet_r, axis=1, keepdims=True)
     return feet_l, feet_r
 
+# def count_pose_aa(motion):
+#     dof = motion['dof']
+#     root_qua = motion['root_rot']
+#     # dof_new = np.concatenate((dof[:, :19], dof[:, 22:26]), axis=1)
+#     dof_new = dof[:, :28]
+#     root_aa = sRot.from_quat(root_qua).as_rotvec()
+
+#     dof_axis = np.load('../description/robots/g1/dof_axis.npy', allow_pickle=True)
+#     dof_axis = dof_axis.astype(np.float32)
+
+#     pose_aa = np.concatenate(
+#         (np.expand_dims(root_aa, axis=1), dof_axis * np.expand_dims(dof_new, axis=2), np.zeros((dof_new.shape[0], 3, 3))),
+#         axis=1).astype(np.float32)
+    
+#     return pose_aa,dof_new
 def count_pose_aa(motion):
     dof = motion['dof']
     root_qua = motion['root_rot']
     # dof_new = np.concatenate((dof[:, :19], dof[:, 22:26]), axis=1)
-    dof_new = dof[:, :28]
     root_aa = sRot.from_quat(root_qua).as_rotvec()
 
     dof_axis = np.load('../description/robots/g1/dof_axis.npy', allow_pickle=True)
     dof_axis = dof_axis.astype(np.float32)
+    toe_indices = [9, 10, 11, 18, 19, 20]
 
+    mask = np.ones(dof.shape[1], dtype=bool)
+    mask[toe_indices] = False
+    dof_filtered = dof[:, mask]
+    # pose_aa = np.concatenate(
+    #     (np.expand_dims(root_aa, axis=1), dof_axis * np.expand_dims(dof_new, axis=2), np.zeros((dof_new.shape[0], 3, 3))),
+    #     axis=1).astype(np.float32)
     pose_aa = np.concatenate(
-        (np.expand_dims(root_aa, axis=1), dof_axis * np.expand_dims(dof_new, axis=2), np.zeros((dof_new.shape[0], 3, 3))),
-        axis=1).astype(np.float32)
+        (np.expand_dims(root_aa, axis=1),
+         dof_axis * np.expand_dims(dof_filtered, axis=2)),
+        axis=1
+    ).astype(np.float32)
     
-    return pose_aa,dof_new
+    print("pose_aa shape: ", pose_aa.shape)
+    
+    return pose_aa,dof_filtered
 
 def EMA_smooth(trans, alpha=0.3):
     ema = np.zeros_like(trans)
@@ -89,7 +114,7 @@ def main(
     force_remake: bool = False,
     force_neutral_body: bool = True,
     upright_start: bool = True,  # By default, let's start upright (for consistency across all models).
-    humanoid_mjcf_path: Optional[str] = "../description/robots/g1/smpl_humanoid.xml",
+    humanoid_mjcf_path: Optional[str] = "../description/robots/g1/g1_29dof_rev_1_0.xml",
     force_retarget: bool = True,
     correct: bool = False
 ):
