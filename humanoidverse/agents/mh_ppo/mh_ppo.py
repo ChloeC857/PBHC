@@ -106,7 +106,7 @@ class MHPPO(BaseAlgo):
 
     def _setup_models_and_optimizer(self):
         self.config.module_dict.critic['output_dim'][-1] = self.num_rew_fn
-        print("CXY: test action number in mp_ppo,py: ", self.num_act)
+        # print("CXY: test action number in mp_ppo,py: ", self.num_act)
         actor_kwargs = {
             "obs_dim_dict": self.algo_obs_dim_dict,
             "module_config_dict": self.config.module_dict.actor,
@@ -143,8 +143,8 @@ class MHPPO(BaseAlgo):
                 phase_embed_dim=self.config.phase_embed.dim
             ).to(self.device)
             
-        logger.info("Actor", self.actor)
-        logger.info("Critic", self.critic)
+        logger.info("!!!!!!!!Actor", self.actor)
+        logger.info("!!!!!!!!Critic", self.critic)
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=self.actor_learning_rate)
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=self.critic_learning_rate)
 
@@ -665,8 +665,42 @@ class MHPPO(BaseAlgo):
                     f"""{'ETA:':>{pad}} {eta:>10.4f}s\n"""
                     f"""{'Time Now:':>{pad}} {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}\n""")  # Four decimal places
 
+        def generate_forward_log():
+            """Generate explicit forward/backward demo info."""
+            fb_string = ""
+            if 'loss_dict' in log_dict:
+                with torch.no_grad():
+                    actor_sample = self.actor.action_mean[0, :5].detach().cpu().numpy() if hasattr(self.actor, "action_mean") else None
+                    critic_sample = None
+                    try:
+                        critic_sample = self.critic.evaluate(self.env.obs_buf_dict["critic_obs"][:1]).detach().cpu().numpy()[0, :5]
+                    except Exception:
+                        pass
+
+                fb_string += f"{'--- Forward / Backward Pass ---':^{pad*2}}\n"
+                if actor_sample is not None:
+                    fb_string += f"{'Actor mean (first 5):':>{pad}} {actor_sample}\n"
+                if critic_sample is not None:
+                    fb_string += f"{'Critic value (first 5):':>{pad}} {critic_sample}\n"
+
+                for key in ["Value", "Surrogate", "Entropy", "L2C2_Value", "L2C2_Policy"]:
+                    if key in log_dict['loss_dict']:
+                        fb_string += f"{f'{key} Loss:':>{pad}} {log_dict['loss_dict'][key]:>10.4f}\n"
+
+                total_norm = 0.0
+                for p in self.actor.parameters():
+                    if p.grad is not None:
+                        param_norm = p.grad.data.norm(2)
+                        total_norm += param_norm.item() ** 2
+                total_norm = total_norm ** 0.5
+                fb_string += f"{'Actor grad norm:':>{pad}} {total_norm:>10.4f}\n"
+                fb_string += f"{'-' * width}\n"
+
+            return fb_string
+        
         # Generate all log strings
-        log_string = (generate_computation_log() +
+        log_string = (generate_forward_log() +
+                      generate_computation_log() +
                       generate_reward_length_log() +
                       generate_env_log() +
                       generate_episode_log() +

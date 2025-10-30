@@ -95,7 +95,7 @@ def pre_process_config(config) -> None:
     
     obs_slices = compute_obs_key_slices(config, obs_dim_dict, each_dict_obs_dims, auxiliary_obs_dims)
     config.env.config.obs.post_compute_config["obs_slices"] = obs_slices
-    print(f"Step 2/999 (helpers): Computed obs_slices, {obs_slices}")
+    # print(f"Step 2/999 (helpers): Computed obs_slices, {obs_slices}")
     # breakpoint()
 
                 
