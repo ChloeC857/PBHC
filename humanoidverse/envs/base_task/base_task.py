@@ -146,12 +146,12 @@ class BaseTask():
 
         self.simulator.load_assets()
         self.num_dof, self.num_bodies, self.dof_names, self.body_names = self.simulator.num_dof, self.simulator.num_bodies, self.simulator.dof_names, self.simulator.body_names
-        print("----------- base_task.py -------------")
-        print(f"num_dof: {self.num_dof}.")
-        print(f"num_bodies: {self.num_bodies}.")
-        print(f"dof_names: {self.dof_names}.")
-        print(f"body_names: {self.body_names}.")
-        print("--------------------------------------")
+        # print("----------- base_task.py -------------")
+        # print(f"num_dof: {self.num_dof}.")
+        # print(f"num_bodies: {self.num_bodies}.")
+        # print(f"dof_names: {self.dof_names}.")
+        # print(f"body_names: {self.body_names}.")
+        # print("--------------------------------------")
         # check dimensions
         assert self.num_dof == self.dim_actions, "Number of DOFs must be equal to number of actions"
 
@@ -210,7 +210,7 @@ class BaseTask():
 
         self.penalised_contact_indices = torch.zeros(len(penalized_contact_names), dtype=torch.long, device=self.device, requires_grad=False)
         for i in range(len(penalized_contact_names)):
-            print(f"CXY: penalized contact name: {penalized_contact_names[i]}")
+            # print(f"CXY: penalized contact name: {penalized_contact_names[i]}")
             self.penalised_contact_indices[i] = self.simulator.find_rigid_body_indice(penalized_contact_names[i])
 
         self.termination_contact_indices = torch.zeros(len(termination_contact_names), dtype=torch.long, device=self.device, requires_grad=False)

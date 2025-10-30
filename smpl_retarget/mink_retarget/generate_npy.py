@@ -77,6 +77,6 @@ for name in target_names:
 axes = np.array(axes, dtype=np.float32)
 np.save(output_path, axes)
 
-print(f"✅ Saved {axes.shape[0]} joint axes to {output_path}")
-if unmatched:
-    print("⚠️ 未匹配到的 joints:", unmatched)
+# print(f"✅ Saved {axes.shape[0]} joint axes to {output_path}")
+# if unmatched:
+    # print("⚠️ 未匹配到的 joints:", unmatched)

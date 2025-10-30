@@ -121,8 +121,8 @@ class Genesis(BaseSimulator):
         asset_root = self.robot_cfg.asset.asset_root
         asset_file = self.robot_cfg.asset.urdf_file
         asset_path = os.path.join(asset_root, asset_file)
-        print("----------- simulator.genesis -------------")
-        print(f"asset_path: {asset_path}.")
+        # print("----------- simulator.genesis -------------")
+        # print(f"asset_path: {asset_path}.")
         
         self.robot = self.scene.add_entity(
             gs.morphs.URDF(
@@ -136,7 +136,7 @@ class Genesis(BaseSimulator):
         )
 
         dof_names_list = copy.deepcopy(self.robot_cfg.dof_names)
-        print(f"dof_names_list: {dof_names_list}.")
+        # print(f"dof_names_list: {dof_names_list}.")
 
         self.genesis_link_names = [link.name for link in self.robot.links]
         self.humanoidverse_link_names = self.robot_cfg.body_names
@@ -148,18 +148,18 @@ class Genesis(BaseSimulator):
             for name in dof_names_list
         ]
         
-        print(f"dof_ids: {self.dof_ids}.")
+        # print(f"dof_ids: {self.dof_ids}.")
 
         self.body_names = self.robot_cfg.body_names
-        print(f"body_names: {self.body_names}.")
+        # print(f"body_names: {self.body_names}.")
         self.num_bodies = len(self.body_names)                # = len(self.rigid_solver.links) - 1
-        print(f"num_bodies: {self.num_bodies}.")    
+        # print(f"num_bodies: {self.num_bodies}.")    
         self.dof_names = dof_names_list
-        print(f"dof_names: {self.dof_names}.")
+        # print(f"dof_names: {self.dof_names}.")
         self.num_dof = len(dof_names_list)                    # = len(self.rigid_solver.joints) - 2
-        print(f"num_dof: {self.num_dof}.")
+        # print(f"num_dof: {self.num_dof}.")
         
-        print("--------------------------------------")
+        # print("--------------------------------------")
 
     # ----- Environment Creation Methods -----
 
