@@ -143,8 +143,10 @@ class MHPPO(BaseAlgo):
                 phase_embed_dim=self.config.phase_embed.dim
             ).to(self.device)
             
-        logger.info("!!!!!!!!Actor", self.actor)
-        logger.info("!!!!!!!!Critic", self.critic)
+        logger.info("Actor Structure")
+        logger.info(f"\n{self.actor}")
+        logger.info("Critic Structure")
+        logger.info(f"\n{self.critic}")
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=self.actor_learning_rate)
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=self.critic_learning_rate)
 
