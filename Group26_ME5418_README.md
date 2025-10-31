@@ -1,16 +1,26 @@
 # Safe Falling for Humanoid Robots Via Motion-Mimic RL
 
-This repository simulates and trains the G1 humanoid robot for walking behavior tests using MuJoCo and PPO as a preparation for safe falling research.
+This repository simulates and trains the G1 humanoid robot for safe falling behavior using MuJoCo and MHPPO based on the framework of [PBHC](https://github.com/TeleHuman/PBHC).
+
+## Contents
+
+- [Environment Setup](#environment-setup)
+- [Project Structure](#project-structure)
+- [Network Demo Running](#netowrk-demo-running)
+- [Gym Demo Running](#gym-demo-running)
+- [Policy Training](#policy-training)
+- [Results of safe forward falling motion](#results-of-safe-forward-falling-motion)
+- [Results of walking motion](#results-of-walking-motion)
 
 ## Environment Setup
 
-Before getting started, ensure that IssacGym is correctly installed and tested. After that, run the following command to set up the conda environment.
+Run the following command to set up the conda environment.
 
 ```bash
-conda create -n humanoid-safe-fall python=3.8
+conda env create -f environment.yml
 conda activate humanoid-safe-fall
 
-# install and test isaacgym
+# Install and test isaacgym
 wget https://developer.nvidia.com/isaac-gym-preview-4
 tar -xvzf isaac-gym-preview-4
 pip install -e isaacgym/python
@@ -31,9 +41,41 @@ pip install -e humanoidverse/isaac_utils
 
 Note: Other folders are not used in the current stage.
 
+## Network Demo Running
+
+This command will run training task with 5 iteration for demo.
+```bash
+chmod +x demo_Network.sh
+./demo_Network.sh
+```
+
+## Gym Demo Running
+
+This command will run the trained walking policy with the visualization in IssacGym. 
+```bash
+chmod +x demo_Gym.sh
+./demo_Gym.sh
+```
+
+We define three types of terrain for safe falling environment. The following command can be run to visualize the real-time simulation of the robot's falling initialization. 
+
+```bash
+# a flat plane
+python .\robot_motion_process\vis_q_mj.py +terrain=flat
+
+# a ramp
+python .\robot_motion_process\vis_q_mj.py +terrain=ramp
+
+# a staircase
+python .\robot_motion_process\vis_q_mj.py +terrain=stair
+```
+
+A quick preview is also provided in the `.gif` files in section 
+[Environment Visualization for Safe Falling](#environment-visualization-for-safe-falling)
+
 ## Policy Training
 
-Replace your MOTION_FILE_PATH in the command with the path to the target motion file.
+Replace the MOTION_FILE_PATH in the command with the path to the target motion file.
 We set 35,000 iterations for walking policy training.
 ```bash
 python humanoidverse/train_agent.py \
@@ -49,17 +91,9 @@ seed=1 \
 +device=cuda:0
 ```
 
-## Demo Running
+## Results of safe forward falling motion
 
-Replace your PT_FILE_PATH in the command to convert a `.pt` file into an `.onnx` file. This command will also run the trained policy with the visualization in IssacGym. S
-```bash
-python humanoidverse/eval_agent.py \
-+device=cuda:0 \
-+env.config.enforce_randomize_motion_start_eval=False \
-+checkpoint=training_outputs/model_30000.pt
-```
-
-## Results
+## Results of walking motion
 
 ### Raw walking video
 ![teaser](video_files/gifs/1_Youtube.gif)
@@ -80,23 +114,6 @@ Result B: the robot manages to walk only 1 step before losing balance.
 ![teaser](video_files/gifs/5_Train_Result_for_Walking_B.gif)
 
 ## Environment Visualization for Safe Falling
-
-We define three types of terrain for safe falling environment. The following command can be run to visualize the real-time simulation of the robot's falling initialization. 
-
-You can adjust the robot's initial height with defining parameter `+height=...` in the command.
-
-```bash
-# a flat plane
-python .\robot_motion_process\vis_q_mj.py +terrain=flat
-
-# a ramp
-python .\robot_motion_process\vis_q_mj.py +terrain=ramp
-
-# a staircase
-python .\robot_motion_process\vis_q_mj.py +terrain=stair
-```
-
-A quick preview is also provided in the `.gif` files below:
 
 ### Humanoid robot on a flat plane
 ![teaser](video_files/gifs/6_g1_flat.gif)
