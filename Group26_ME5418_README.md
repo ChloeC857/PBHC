@@ -36,6 +36,7 @@ pip install -e humanoidverse/isaac_utils
 - `smpl_retarget`: tools for retargeting SMPL format motinos to the G1 humanoid robot.
 - `robot_motion_process`: visualization tools for robot format motion.
 - `humanoidverse`: training RL policy.
+    - `agents`: storing the core logic of RL policy learning, forming a complete pipeline from network construction, algorithm instantiation to training execution.
     - `config`: storing training configurations, including neural network frameworks, reward designs, observation dimension, and optimization hyper-parameters. 
     - `envs`:  storing simulation environments, loads robots and terrains
     - `simulator`: storing simulation interfaces, executes the chosen action and return observations for the next stage
