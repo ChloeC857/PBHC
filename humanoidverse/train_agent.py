@@ -116,14 +116,11 @@ def main(config: OmegaConf):
     # Set up environment and experiment directory
     # ============================================================================
     
-    # print("Step 1/999 (train_agent.py): Setting up environment and experiment directory")
-    
     # Pre-process config (resolve paths, validate settings)
     pre_process_config(config)
 
     config.env.config.save_rendering_dir = str(Path(config.experiment_dir) / "renderings_training")
     
-    # print("Step 8/999 (train_agent.py): Instantiating training environment")
     # Instantiate training environment (robot + task + sensors)
     env: BaseTask = instantiate(config=config.env, device=device)
 

@@ -1,10 +1,10 @@
-conda activate pbhc
+conda activate humanoid-safe-fall
 
 echo "Activated conda env: $CONDA_DEFAULT_ENV"
 
 python humanoidverse/train_agent.py \
 +simulator=isaacgym +exp=demo_exp +terrain=terrain_locomotion_plane \
-project_name=MotionTracking num_envs=8 \
+project_name=MotionTracking num_envs=12 \
 +obs=motion_tracking/main \
 +robot=g1/g1_23dof_lock_wrist \
 +domain_rand=main \
