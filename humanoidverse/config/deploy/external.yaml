@@ -12,6 +12,13 @@ experiment_dir: ${base_dir}/${project_name}/${timestamp}-${experiment_name}-${lo
 save_dir: ${experiment_dir}/.hydra
 force_flat_terrain: false
 use_wandb: true
+wandb:
+  wandb_project: safe_falling
+  wandb_tags: 'online' # 'online' or 'offline' or 'disabled'
+  wandb_group: null
+  wandb_id: null
+  wandb_entity: 1744460972-nus
+  wandb_dir: ${experiment_dir}/.wandb
 log_task_name: locomotion
 # sim_type: isaacgym
 env_spacing: 20
