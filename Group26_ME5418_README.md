@@ -6,7 +6,7 @@ This repository simulates and trains the G1 humanoid robot for safe falling beha
 
 - [Environment Setup](#environment-setup)
 - [Project Structure](#project-structure)
-- [Network Demo Running](#netowrk-demo-running)
+- [Network Demo Running](#network-demo-running)
 - [Gym Demo Running](#gym-demo-running)
 - [Policy Training](#policy-training)
 - [Results of safe forward falling motion](#results-of-safe-forward-falling-motion)
@@ -17,7 +17,7 @@ This repository simulates and trains the G1 humanoid robot for safe falling beha
 Run the following command to set up the conda environment.
 
 ```bash
-conda env create -f environment.yml
+conda create -n humanoid-safe-fall python=3.8
 conda activate humanoid-safe-fall
 
 # Install and test isaacgym
@@ -36,12 +36,16 @@ pip install -e humanoidverse/isaac_utils
 - `smpl_retarget`: tools for retargeting SMPL format motinos to the G1 humanoid robot.
 - `robot_motion_process`: visualization tools for robot format motion.
 - `humanoidverse`: training RL policy.
+    - `config`: storing training configurations, including neural network frameworks, reward designs, observation dimension, and optimization hyper-parameters. 
+    - `envs`:  storing simulation environments, loads robots and terrains
+    - `simulator`: storing simulation interfaces, executes the chosen action and return observations for the next stage
+    - `utils`: tools for motion data processing, quaternion computation and so on
 - `video_files`: Storing the walking video, processed motion files, training outputs, and terrain visualizations for setting up the safe falling environment.
 - `training_outputs`: Storing the walking policy and corresponding model files after 35,000 training iterations.
 
 Note: Other folders are not used in the current stage.
 
-## Network Demo Running
+## **Network** Demo Running
 
 This command will run training task with 5 iteration for demo.
 ```bash
@@ -49,7 +53,7 @@ chmod +x demo_Network.sh
 ./demo_Network.sh
 ```
 
-## Gym Demo Running
+## **Gym** Demo Running
 
 This command will run the trained walking policy with the visualization in IssacGym. 
 ```bash
@@ -57,18 +61,7 @@ chmod +x demo_Gym.sh
 ./demo_Gym.sh
 ```
 
-We define three types of terrain for safe falling environment. The following command can be run to visualize the real-time simulation of the robot's falling initialization. 
-
-```bash
-# a flat plane
-python .\robot_motion_process\vis_q_mj.py +terrain=flat
-
-# a ramp
-python .\robot_motion_process\vis_q_mj.py +terrain=ramp
-
-# a staircase
-python .\robot_motion_process\vis_q_mj.py +terrain=stair
-```
+We define three types of terrain for safe falling environment. 
 
 A quick preview is also provided in the `.gif` files in section 
 [Environment Visualization for Safe Falling](#environment-visualization-for-safe-falling)
@@ -92,6 +85,28 @@ seed=1 \
 ```
 
 ## Results of safe forward falling motion
+
+### Raw falling video
+![teaser](video_files/gifs/Raw_Falling_Video.gif)
+
+### Train Result
+Result A: baseline network. The robot perform unstably.
+
+![teaser](video_files/gifs/Train_Result_for_Falling_Result_A.gif)
+
+Result B: baseline network with modified reward terms and training parameters. There is a shake when robot fall on the ground.
+
+![teaser](video_files/gifs/Train_Result_for_Falling_Result_B.gif)
+
+Result C: baseline network with modified reward terms, modified training parameters, and one additional layer in the critic network. The robot can mimic the falling motion well.
+
+![teaser](video_files/gifs/Train_Result_for_Falling_Result_C.gif)
+
+C strategy can be visualized with the following command
+
+```bash
+python humanoidverse/eval_agent.py +device=cuda:0 +env.config.enforce_randomize_motion_start_eval=False +checkpoint=training_outputs/model_30000.pt
+```
 
 ## Results of walking motion
 

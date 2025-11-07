@@ -1,7 +1,7 @@
 seed: 1
 codebase_version: 1.0
 headless: true
-num_envs: 2048
+num_envs: 128
 auto_load_latest: false
 checkpoint: null
 project_name: MotionTracking
@@ -50,7 +50,7 @@ algo:
     logging_interval: 25
     load_optimizer: true
     init_noise_std: 0.8
-    num_learning_iterations: 35000
+    num_learning_iterations: 1000000
     init_at_random_ep_len: true
     eval_callbacks: null
     phase_embed:
@@ -80,7 +80,6 @@ algo:
           hidden_dims:
           - 768
           - 512
-          - 256
           - 128
           activation: ELU
 env:
@@ -107,9 +106,9 @@ env:
     termination:
       terminate_when_close_to_dof_pos_limit: false
       terminate_when_close_to_dof_vel_limit: false
-      terminate_when_close_to_torque_limit: true
+      terminate_when_close_to_torque_limit: false
       terminate_by_contact: false
-      terminate_by_gravity: false
+      terminate_by_gravity: true
       terminate_by_low_height: false
       terminate_when_motion_end: true
       terminate_when_motion_far: true
@@ -290,7 +289,6 @@ robot:
   right_foot_name: right_ankle_roll_link
   left_foot_name: left_ankle_roll_link
   knee_name: knee_link
-  head_name: head
   has_torso: true
   torso_name: torso_link
   has_upper_body_dof: true
@@ -527,18 +525,19 @@ robot:
   - right_shoulder_yaw_link
   - right_elbow_link
   terminate_after_contacts_on:
-  - head
-  - hip
   - pelvis
-  penalize_contacts_on:
   - shoulder
-  - torso
-  - head
   - hip
+  penalize_contacts_on:
   - pelvis
+  - shoulder
+  - hip
+  - torso
+  - waist
+  - elbow
   motion:
     motion_lib_type: WJX
-    motion_file: example/motion_data/fall1.pkl
+    motion_file: example/motion_data/video1_fixed_int.pkl
     asset:
       assetRoot: description/robots/g1/
       assetFileName: g1_23dof_lock_wrist_fitmotionONLY.xml
@@ -1184,18 +1183,18 @@ rewards:
     teleop_joint_velocity: 1.0
     penalty_torques: -1.0e-06
     penalty_action_rate: -0.5
-    feet_air_time: 0.0
-    penalty_feet_contact_forces: 0.0
+    feet_air_time: 1.0
+    penalty_feet_contact_forces: -0.01
     penalty_stumble: -2.0
     penalty_slippage: -1.0
     limits_dof_pos: -10.0
     limits_dof_vel: -5.0
     limits_torque: -5.0
-    termination: 0.0
+    termination: -200.0
     collision: -30.0
   teleop_body_pos_lowerbody_weight: 1.0
   teleop_body_pos_upperbody_weight: 1.0
-  desired_feet_max_height_for_this_air: 0.05
+  desired_feet_max_height_for_this_air: 0.2
   reward_tracking_sigma:
     teleop_max_joint_pos: 1.0
     teleop_upper_body_pos: 0.015
@@ -1213,7 +1212,7 @@ rewards:
     type: origin
     scale: 1.0
   locomotion_max_contact_force: 400.0
-  desired_feet_air_time: 0.0
+  desired_feet_air_time: 0.3
   reward_penalty_curriculum: true
   reward_initial_penalty_scale: 0.1
   reward_min_penalty_scale: 0.0
