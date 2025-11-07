@@ -11,7 +11,7 @@ timestamp: ${now:%Y%m%d_%H%M%S}
 experiment_dir: ${base_dir}/${project_name}/${timestamp}-${experiment_name}-${log_task_name}-${robot.asset.robot_type}
 save_dir: ${experiment_dir}/.hydra
 force_flat_terrain: false
-use_wandb: false
+use_wandb: true
 log_task_name: locomotion
 # sim_type: isaacgym
 env_spacing: 20
@@ -20,7 +20,7 @@ eval_overrides:
   headless: false
   num_envs: 1
   auto_load_latest: false
-  use_wandb: false
+  use_wandb: true
   env:
     config:
       max_episode_length_s: 100000
