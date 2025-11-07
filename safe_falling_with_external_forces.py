@@ -1,10 +1,12 @@
-"""脚本：在play阶段检测外部推力并触发四个方向的摔倒恢复policy。
+"""
+Detect external pushes during the play phase and trigger one of four directional falling recovery policies.
 
-该脚本实现了以下功能：
-1. 加载正常行走的policy
-2. 加载前、后、左、右四个方向的摔倒恢复policy
-3. 实时检测四个方向的推力（通过监控机器人基座的加速度）
-4. 当检测到某个方向的推力超过阈值时，自动切换到对应方向的摔倒恢复policy
+This script implements the following functions:
+
+1. Load the normal walking policy.
+2. Load four falling recovery policies for forward, backward, left, and right directions.
+3. Monitor the robot base acceleration to detect pushes in all four directions in real time.
+4. When a push exceeds the threshold, switch to the corresponding recovery policy.
 """
 
 import argparse
@@ -107,13 +109,15 @@ import whole_body_tracking.tasks  # noqa: F401
 
 
 class ExternalForceDetector:
-    """检测外部推力的模块。
+    """
+    Module for detecting external pushes.
 
-    通过监控机器人基座的线性速度变化来检测四个方向（前、后、左、右）的推力。
-    坐标系假设：
-    - x轴：前后方向（前为正，后为负）
-    - y轴：左右方向（左为正，右为负）
-    - z轴：上下方向
+    Detects pushes in four directions (forward, backward, left, right) by monitoring changes in the robot base linear velocity.
+
+    Coordinates:
+        x-axis: forward and backward (forward is positive, backward is negative)
+        y-axis: left and right (left is positive, right is negative)
+        z-axis: up and down
     """
 
     def __init__(
@@ -123,92 +127,96 @@ class ExternalForceDetector:
         force_threshold: float = 2.0,
         detection_window: int = 5,
     ):
-        """初始化外部力检测器。
+        """
+        Initialize the external push detector.
 
         Args:
-            num_envs: 环境数量
-            device: 计算设备
-            force_threshold: 检测推力的阈值（m/s^2）
-            detection_window: 用于平滑加速度的窗口大小
+            num_envs: Number of environments.
+            device: Computation device.
+            force_threshold: Threshold for push detection (m/s²).
+            detection_window: Window size for smoothing acceleration.
         """
         self.num_envs = num_envs
         self.device = device
         self.force_threshold = force_threshold
         self.detection_window = detection_window
 
-        # 存储历史速度用于计算加速度
+        # Store history velocities for calculating acceleration
         self.prev_lin_vel = torch.zeros(num_envs, 3, device=device)
         self.acceleration_history = torch.zeros(num_envs, detection_window, 3, device=device)
         self.acceleration_index = 0
         self.dt = None
 
-        # 检测状态：每个环境检测到的方向
-        # 0: 无推力, 1: 前, 2: 后, 3: 左, 4: 右
+        # Detection state: detected direction for each environment  
+        # 0: No push, 1: Forward, 2: Backward, 3: Left, 4: Right
         self.detected_direction = torch.zeros(num_envs, dtype=torch.long, device=device)
 
     def update(self, robot_lin_vel: torch.Tensor, dt: float) -> torch.Tensor:
-        """更新检测器并返回检测到的方向。
+        """
+        Update the detector and return the detected directions.
 
         Args:
-            robot_lin_vel: 机器人基座的线性速度，shape (num_envs, 3)
-            dt: 时间步长
+            robot_lin_vel: Linear velocity of the robot base, shape (num_envs, 3).
+            dt: Time step.
 
         Returns:
-            检测到的方向，shape (num_envs,)，值为：0=无, 1=前, 2=后, 3=左, 4=右
+            Detected directions, shape (num_envs), values: 0 = none, 1 = forward, 2 = backward, 3 = left, 4 = right.
         """
         self.dt = dt
 
-        # 计算加速度（速度变化率）
+        # Calculate acceleration
         acceleration = (robot_lin_vel - self.prev_lin_vel) / dt
 
-        # 更新历史记录
+        # Update acceleration history
         self.acceleration_history[:, self.acceleration_index] = acceleration
         self.acceleration_index = (self.acceleration_index + 1) % self.detection_window
 
-        # 计算平均加速度（用于平滑）
+        # Calculate mean acceleration (for smoothing)
         avg_acceleration = self.acceleration_history.mean(dim=1)  # shape: (num_envs, 3)
 
-        # 检测四个方向的推力
-        # x方向：前（正）和后（负）
-        forward_acc = avg_acceleration[:, 0]  # x正方向（前）
-        backward_acc = -avg_acceleration[:, 0]  # x负方向（后）
-        # y方向：左（正）和右（负）
-        left_acc = avg_acceleration[:, 1]  # y正方向（左）
-        right_acc = -avg_acceleration[:, 1]  # y负方向（右）
+        # Detect pushes in four directions
+        # x-axis：forward (positive) and backward (negative)
+        forward_acc = avg_acceleration[:, 0]  # positive x-axis (forward)
+        backward_acc = -avg_acceleration[:, 0]  # negative x-axis (backward)
+        # y-aixs：left (positive) and right (negative)
+        left_acc = avg_acceleration[:, 1]  # positive y-axis (left)
+        right_acc = -avg_acceleration[:, 1]  # negative y-axis (right)
 
-        # 找到每个环境的最大加速度方向
-        # 创建一个张量存储四个方向的加速度值
+        # Find the direction of maximum acceleration in every environment  
+        # Create a tensor to store acceleration values for the four directions
         direction_accs = torch.stack(
             [
-                torch.zeros(self.num_envs, device=self.device),  # 0: 无推力
-                forward_acc,  # 1: 前
-                backward_acc,  # 2: 后
-                left_acc,  # 3: 左
-                right_acc,  # 4: 右
+                torch.zeros(self.num_envs, device=self.device),  # 0: no push
+                forward_acc,  # 1: forward
+                backward_acc,  # 2: backward
+                left_acc,  # 3: left
+                right_acc,  # 4: right
             ],
             dim=1,
         )  # shape: (num_envs, 5)
 
-        # 找到最大加速度的方向
+        # Find the direction of maximum acceleration
         max_acc, max_direction = direction_accs.max(dim=1)
 
-        # 只有当最大加速度超过阈值时才认为检测到推力
-        # 否则方向为0（无推力）
+        # WHen maximum acceleration exceeds the threshold, push detected
+        # Otherwise, the direction is set to 0 (no push)
         self.detected_direction = torch.where(
             max_acc > self.force_threshold, max_direction, torch.zeros_like(max_direction)
         )
 
-        # 更新历史速度
+        # Update history velocity
         self.prev_lin_vel = robot_lin_vel.clone()
 
         return self.detected_direction
 
     def reset(self, env_ids: torch.Tensor | None = None):
-        """重置检测器状态。
+        """
+        Reset the detector state.
 
         Args:
-            env_ids: 要重置的环境ID，如果为None则重置所有环境
+            env_ids: IDs of the environments to reset. If None, reset all environments.
         """
+
         if env_ids is None:
             env_ids = torch.arange(self.num_envs, device=self.device)
 
@@ -218,23 +226,23 @@ class ExternalForceDetector:
 
 
 def main():
-    """主函数：运行带四个方向摔倒恢复的play脚本。"""
+    """ Main function: run the play script with four-direction falling recovery."""
     agent_cfg: RslRlOnPolicyRunnerCfg = cli_args.parse_rsl_rl_cfg(args_cli.task, args_cli)
     env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg = hydra_task_config(
         args_cli.task, "rsl_rl_cfg_entry_point"
     )
     env_cfg.scene.num_envs = args_cli.num_envs if args_cli.num_envs is not None else env_cfg.scene.num_envs
 
-    # 加载正常policy的路径
+    # Load walking policy path
     if args_cli.normal_policy_path:
         normal_policy_path = args_cli.normal_policy_path
     else:
-        # 默认使用agent_cfg中的路径
+        # Use path from agent_cfg as default
         log_root_path = os.path.join("logs", "rsl_rl", agent_cfg.experiment_name)
         log_root_path = os.path.abspath(log_root_path)
         normal_policy_path = get_checkpoint_path(log_root_path, agent_cfg.load_run, agent_cfg.load_checkpoint)
 
-    # 加载四个方向的摔倒恢复policy路径
+    # Load four-direction falling recovery policies paths
     fall_policy_paths = {}
     fall_policy_names = {
         1: ("forward", args_cli.fall_forward_policy_path),
@@ -246,38 +254,38 @@ def main():
     for direction_id, (direction_name, policy_path) in fall_policy_names.items():
         if policy_path is None:
             raise ValueError(
-                f"必须提供{direction_name}方向摔倒policy的路径！"
-                f"使用 --fall_{direction_name}_policy_path 参数指定{direction_name}方向摔倒policy的checkpoint目录。"
+                f"Please provide recovery policy path for direction {direction_name}!"
+                f"Use --fall_{direction_name}_policy_path, specify the checkpoint directory for falling policy in the {direction_name} direction."
             )
         fall_policy_paths[direction_id] = get_checkpoint_path(
             policy_path, agent_cfg.load_run, agent_cfg.load_checkpoint
         )
 
-    print(f"[INFO]: 加载正常行走policy从: {normal_policy_path}")
+    print(f"[INFO]: Load walking policy from: {normal_policy_path}")
     for direction_id, (direction_name, _) in fall_policy_names.items():
-        print(f"[INFO]: 加载{direction_name}方向摔倒恢复policy从: {fall_policy_paths[direction_id]}")
+        print(f"[INFO]: Load recovery policy in {direction_name} direction from: {fall_policy_paths[direction_id]}")
 
-    # 创建环境
+    # Create environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
 
-    # 包装环境
+    # Wrap environment
     if isinstance(env.unwrapped, DirectMARLEnv):
         env = multi_agent_to_single_agent(env)
     env = RslRlVecEnvWrapper(env)
 
-    # 加载正常行走policy
+    # Load walking policy
     normal_ppo_runner = OnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
     normal_ppo_runner.load(normal_policy_path)
     normal_policy = normal_ppo_runner.get_inference_policy(device=env.unwrapped.device)
 
-    # 加载四个方向的摔倒恢复policy
+    # Load four-direction falling recovery policies
     fall_policies = {}
     for direction_id, policy_path in fall_policy_paths.items():
         fall_ppo_runner = OnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
         fall_ppo_runner.load(policy_path)
         fall_policies[direction_id] = fall_ppo_runner.get_inference_policy(device=env.unwrapped.device)
 
-    # 初始化外部力检测器
+    # Initial external force detector
     force_detector = ExternalForceDetector(
         num_envs=env_cfg.scene.num_envs,
         device=env.unwrapped.device,
@@ -285,70 +293,72 @@ def main():
         detection_window=args_cli.detection_window,
     )
 
-    # 跟踪每个环境当前使用的policy方向
-    # 0: 正常policy, 1: 前, 2: 后, 3: 左, 4: 右
+    # Track the policy used in every environment
+    # 0: walking policy, 1: forward, 2: backward, 3: left, 4: right
     current_policy_direction = torch.zeros(env_cfg.scene.num_envs, dtype=torch.long, device=env.unwrapped.device)
 
-    # 获取机器人articulation
+    # Get robot articulation
     robot = env.unwrapped.scene["robot"]
 
-    # 重置环境
+    # Reset environment
     obs, _ = env.get_observations()
     timestep = 0
 
-    print(f"[INFO]: 开始仿真，推力检测阈值: {args_cli.force_threshold} m/s^2")
+    print(f"[INFO]: Simulation starts, force_threshold: {args_cli.force_threshold} m/s^2")
 
-    # 仿真循环
+    # Simulation loop
     while simulation_app.is_running():
         with torch.inference_mode():
-            # 获取机器人基座的线性速度（根节点通常是第一个body）
-            # 使用body_lin_vel_w获取所有body的速度，然后取第一个（索引0）作为根节点
+            # Get the linear velocity of the robot base root node is usually the first one)  
+            # Use body_lin_vel_w to get velocities of all bodies, then take the first one (index 0) as root node
             robot_lin_vel = robot.data.body_lin_vel_w[:, 0]  # shape: (num_envs, 3)
             dt = env.unwrapped.step_dt
 
-            # 更新外部力检测器
+            # Update external force detector
             detected_direction = force_detector.update(robot_lin_vel, dt)
 
-            # 如果检测到某个方向的推力，切换到对应方向的摔倒恢复policy
-            # 只有当检测到方向且当前不是摔倒恢复状态时，才切换
+            # If push detected in any specific direction, switch to corresponding recovery policy
+            # Switch only when push detected and in walking state
+
             switch_mask = (detected_direction > 0) & (current_policy_direction == 0)
             current_policy_direction[switch_mask] = detected_direction[switch_mask]
 
-            # 如果已经使用摔倒恢复policy，可以检测是否应该切换回正常policy
-            # 这里可以根据需要实现更复杂的切换逻辑
-            # 例如：检测机器人是否已经恢复稳定（速度变化率变小）
-            # 暂时保持使用摔倒恢复policy，直到手动重置或环境重置
+            # If a falling recovery policy is already in use, check whether to switch back to the walking policy  
+            # More complex switching logic can be added here if needed  
+            # For example, detect whether the robot has regained stability (e.g., reduced velocity variation)  
+            # For now, keep using the falling recovery policy until a manual or environment reset occurs  
 
-            # 执行policy
-            # 需要根据每个环境当前使用的policy方向来选择对应的policy
-            # 先计算所有环境的actions（使用normal policy作为默认）
+            # Execute the policy  
+            # Select the corresponding policy based on the current direction used in every environment  
+            # Calculate actions for all environments (use the walking policy as default)
+
             actions = normal_policy(obs)
 
-            # 为每个方向分别计算actions
-            for direction_id in [1, 2, 3, 4]:  # 1:前, 2:后, 3:左, 4:右
+            # Calculate actions for every direction
+            for direction_id in [1, 2, 3, 4]:  # 1:forward, 2:backward, 3:left, 4:right
                 direction_mask = current_policy_direction == direction_id
                 if direction_mask.any():
                     direction_actions = fall_policies[direction_id](obs[direction_mask])
                     actions[direction_mask] = direction_actions
 
-            # 环境步进
+            # env step
             obs, _, terminated, infos = env.step(actions)
 
-            # 处理环境重置
+            # Reset environment
             if terminated.any():
                 reset_env_ids = torch.where(terminated)[0]
-                # 重置检测器状态
+                # Reset external force detector
                 force_detector.reset(reset_env_ids)
-                # 重置policy使用状态
+                # Reset policy state
                 current_policy_direction[reset_env_ids] = 0
-                print(f"[INFO] 时间步 {timestep}: 环境 {reset_env_ids.tolist()} 已重置")
+                print(f"[INFO] TImestep {timestep}: Environment {reset_env_ids.tolist()} has been reset.")
 
-            # 打印检测信息（仅第一个环境）
-            direction_names = {0: "正常", 1: "前", 2: "后", 3: "左", 4: "右"}
+            # Print detection info (for the first environment only)
+            direction_names = {0: "No push", 1: "Forward", 2: "Backward", 3: "Left", 4: "Right"}
             detected_dir = int(detected_direction[0].item())
             if detected_dir > 0:
                 direction_name = direction_names[detected_dir]
-                print(f"[INFO] 时间步 {timestep}: 检测到{direction_name}方向推力！切换到{direction_name}方向摔倒恢复policy。")
+                print(f"[INFO] Timestep {timestep}: Detects push in {direction_name} direction! Switch to recovery policy in {direction_name} direction.")
 
             timestep += 1
 
@@ -356,14 +366,14 @@ def main():
                 if timestep >= args_cli.video_length:
                     break
 
-    # 关闭环境
+    # Close environment
     env.close()
-    print("[INFO]: 仿真结束")
+    print("[INFO]: Simulation ends.")
 
 
 if __name__ == "__main__":
-    # 运行主函数
+    # Run main function
     main()
-    # 关闭仿真应用
+    # Close simulation app
     simulation_app.close()
 
